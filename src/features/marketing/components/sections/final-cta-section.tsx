@@ -16,7 +16,7 @@ export function FinalCtaSection() {
           title="Ready to accelerate your lead capture pipeline?"
         />
         <div className="final-cta-actions">
-          <ButtonLink href="#pricing" size="lg">
+          <ButtonLink href="/register" size="lg">
             Get Started Now <ArrowRight aria-hidden="true" size={18} />
           </ButtonLink>
           <ButtonLink href="mailto:hello@dealsync.io" size="lg" variant="secondary">

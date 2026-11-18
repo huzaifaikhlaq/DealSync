@@ -40,8 +40,7 @@ import {
   X,
 } from "lucide-react";
 
-const sdkSnippet =
-  '<script src="https://cdn.dealsync.io/v2/embed.js" async></script>';
+const sdkSnippet = '<script src="https://cdn.dealsync.io/v2/embed.js" async></script>';
 export function FormsPage() {
   const [forms, setForms] = useState(seedForms);
   const [query, setQuery] = useState("");

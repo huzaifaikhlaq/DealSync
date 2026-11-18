@@ -14,7 +14,7 @@ const plans = [
       "Instant webhook forwarding",
     ],
     action: "Start Starter Trial",
-    href: "#contact",
+    href: "/register",
   },
   {
     name: "Growth Pro",
@@ -28,7 +28,7 @@ const plans = [
       "Advanced conditional routing",
     ],
     action: "Start 14-Day Free Trial",
-    href: "#contact",
+    href: "/register",
     popular: true,
   },
   {

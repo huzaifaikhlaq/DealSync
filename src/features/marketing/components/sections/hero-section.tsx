@@ -205,7 +205,7 @@ export function HeroSection() {
           modern teams.
         </p>
         <div className="mt-[2.3rem] flex items-center justify-center gap-[0.8rem]">
-          <ButtonLink href="#pricing" size="lg">
+          <ButtonLink href="/register" size="lg">
             Get Started Free <ArrowRight aria-hidden="true" size={19} />
           </ButtonLink>
           <ButtonLink href="#contact" variant="secondary" size="lg">

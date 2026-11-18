@@ -132,10 +132,10 @@ export function SiteHeader() {
           </nav>
 
           <div className="header-actions">
-            <a className="sign-in-link" href="#footer">
+            <Link className="sign-in-link" href="/login">
               Sign in
-            </a>
-            <ButtonLink href="#pricing" size="sm">
+            </Link>
+            <ButtonLink href="/register" size="sm">
               <span className="desktop-cta-label">Start Free Trial</span>
               <span className="mobile-cta-label">Try free</span>
             </ButtonLink>
