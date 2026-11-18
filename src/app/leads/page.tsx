@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
-import { LeadsPage } from "@/features/leads/leads-page";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Leads | DealSync",
-  description: "Search, filter, and manage your incoming leads in DealSync.",
-};
-
-export default function LeadsRoute() {
-  return <LeadsPage />;
+export default function LeadsRedirect() {
+  redirect("/dashboard/leads");
 }

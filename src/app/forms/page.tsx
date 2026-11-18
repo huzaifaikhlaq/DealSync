@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
-import { FormsPage } from "@/features/forms/forms-page";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Forms | DealSync",
-  description: "Create and manage your DealSync lead capture forms.",
-};
-
-export default function FormsRoute() {
-  return <FormsPage />;
+export default function FormsRedirect() {
+  redirect("/dashboard/forms");
 }
