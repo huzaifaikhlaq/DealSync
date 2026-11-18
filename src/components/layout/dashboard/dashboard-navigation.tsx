@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { dashboardNavigation } from "@/config/navigation";
+import { dashboardNavigation } from "@/features/dashboard/navigation";
 
 export function DashboardNavigation({
   onNavigate,

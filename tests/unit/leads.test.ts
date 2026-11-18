@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { filterLeads } from "@/features/leads/utils/leads";
-import type { Lead } from "@/features/leads/types/lead";
+import type { Lead } from "@/features/leads/types/lead.types";
 
 const leads: Lead[] = [
   {

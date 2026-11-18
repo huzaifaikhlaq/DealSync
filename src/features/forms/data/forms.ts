@@ -1,4 +1,4 @@
-import type { FormRecord } from "../types/form";
+import type { FormRecord } from "../types/form.types";
 
 export const seedForms: FormRecord[] = [
   {

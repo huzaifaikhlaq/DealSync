@@ -23,10 +23,10 @@ export function SectionHeading({
   children,
 }: SectionHeadingProps) {
   return (
-    <div className={cn("section-heading", align === "center" && "is-centered", className)}>
-      <p className="eyebrow">{eyebrow}</p>
-      <h2 className={titleClassName} id={id}>{title}</h2>
-      {description ? <p className="section-description">{description}</p> : null}
+    <div className={cn("text-left", align === "center" && "text-center", className)}>
+      <p className="mb-3 text-[0.72rem] font-bold tracking-[0.13em] text-primary-container uppercase">{eyebrow}</p>
+      <h2 className={cn("m-0 text-[clamp(1.8rem,3.5vw,2.65rem)] leading-[1.15] font-semibold tracking-[-0.045em]", titleClassName)} id={id}>{title}</h2>
+      {description ? <p className="mx-auto mt-4 max-w-[48rem] text-[1.05rem] leading-[1.7] text-text-muted">{description}</p> : null}
       {children}
     </div>
   );

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { filterAndSortForms } from "@/features/forms/utils/forms";
-import type { FormRecord } from "@/features/forms/types/form";
+import type { FormRecord } from "@/features/forms/types/form.types";
 
 const forms: FormRecord[] = [
   {

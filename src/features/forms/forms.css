@@ -864,3 +864,30 @@
     grid-column: auto;
   }
 }
+
+@media (max-width: 380px) {
+  .forms-title {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .forms-ctas button {
+    font-size: 9px;
+  }
+  .embed-banner {
+    padding: 13px;
+  }
+  .embed-copy {
+    min-width: 0;
+  }
+  .embed-actions > button:not(.dismiss-banner) {
+    flex: 1;
+  }
+  .form-card-actions {
+    gap: 4px;
+  }
+  .form-card-actions button {
+    gap: 3px;
+    padding-inline: 4px;
+    font-size: 8px;
+  }
+}

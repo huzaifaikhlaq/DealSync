@@ -8,7 +8,7 @@ import {
   TrendingUp,
   Upload,
 } from "lucide-react";
-import type { FormRecord } from "../types/form";
+import type { FormRecord } from "../types/form.types";
 
 export function FormCard({
   form,

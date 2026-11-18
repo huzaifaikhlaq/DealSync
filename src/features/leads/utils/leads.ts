@@ -1,5 +1,5 @@
 import { serializeCsv } from "@/lib/utils/csv";
-import type { Lead } from "../types/lead";
+import type { Lead } from "../types/lead.types";
 
 export type LeadFilters = {
   query: string;

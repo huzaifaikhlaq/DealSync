@@ -7,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function LeadsRoute() {
-  return <LeadsPage />;
+  return (
+    <div className="overflow-hidden">
+      <LeadsPage />
+    </div>
+  )
 }

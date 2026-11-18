@@ -382,6 +382,12 @@
   }
 }
 @media (max-width: 650px) {
+  .dash-shell {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
   .dash-sidebar {
     z-index: 50;
     width: min(290px, 85vw);
@@ -404,7 +410,9 @@
     background: #16182b70;
   }
   .dash-main {
+    flex: 1 1 0%;
     width: 100%;
+    min-width: 0;
     margin: 0;
   }
   .dash-topbar {
@@ -424,8 +432,12 @@
     color: #42475a;
   }
   .global-search {
+    min-width: 0;
     height: 36px;
     padding-inline: 9px;
+  }
+  .global-search input {
+    font-size: 16px;
   }
   .global-search kbd {
     display: none;
@@ -445,7 +457,11 @@
     display: none;
   }
   .dash-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     padding: 14px 12px;
+    margin-inline: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1391,6 +1407,7 @@
   }
   .dash-content {
     gap: 13px;
+    min-width: 0;
     padding: 14px 12px;
   }
   .welcome-card {
@@ -1505,6 +1522,40 @@
     bottom: 12px;
     left: 12px;
     justify-content: flex-start;
+  }
+}
+@media (max-width: 380px) {
+  .dash-topbar {
+    gap: 7px;
+    padding-inline: 9px;
+  }
+  .top-actions {
+    gap: 2px;
+  }
+  .dash-content {
+    padding-inline: 9px;
+  }
+  .welcome-card {
+    padding: 14px;
+  }
+  .welcome-title h1 {
+    font-size: 19px;
+  }
+  .welcome-actions {
+    grid-template-columns: 1fr;
+  }
+  .welcome-actions > * {
+    width: 100%;
+  }
+  .welcome-actions .primary-button,
+  .select-control {
+    grid-column: auto;
+  }
+  .metric-card {
+    padding: 11px;
+  }
+  .metric-value {
+    gap: 5px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

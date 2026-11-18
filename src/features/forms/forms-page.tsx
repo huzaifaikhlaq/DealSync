@@ -15,7 +15,7 @@ import {
   useDashboardSearch,
 } from "@/components/layout/dashboard/dashboard-context";
 import { seedForms } from "./data/forms";
-import type { FormRecord } from "./types/form";
+import type { FormRecord } from "./types/form.types";
 import { FormCard } from "./components/form-card";
 import { FormMetric } from "./components/form-metric";
 import { filterAndSortForms, countFormStatuses } from "./utils/forms";

@@ -191,20 +191,20 @@ function ProductPreview() {
 
 export function HeroSection() {
   return (
-    <section className="hero-section" aria-labelledby="hero-title">
-      <div className="hero-glow" aria-hidden="true" />
-      <div className="hero-copy content-width">
-        <p className="hero-kicker"><span /> Enterprise Pipeline Infrastructure</p>
-        <h1 id="hero-title">
-          Turn Every Form Submission Into an <span>Opportunity.</span>
+    <section className="relative overflow-hidden bg-[radial-gradient(ellipse_34rem_23rem_at_50%_8%,rgb(215_211_255_/_58%),transparent_72%),radial-gradient(ellipse_38rem_28rem_at_88%_48%,rgb(218_229_255_/_54%),transparent_70%),var(--background)] py-16 md:pt-16 md:pb-20" aria-labelledby="hero-title">
+      <div className="pointer-events-none absolute top-4 left-1/2 z-0 aspect-square w-[min(50rem,90vw)] -translate-x-1/2 rounded-full bg-[#e8e5ff]/40 blur-[90px]" aria-hidden="true" />
+      <div className="relative z-[1] mx-auto flex w-[min(100%-2.5rem,78rem)] flex-col items-center text-center">
+        <p className="mb-6 inline-flex items-center gap-[0.55rem] rounded-full border border-[#3525cd]/[0.07] bg-white/[0.68] px-[0.85rem] py-2 text-[0.8rem] font-medium text-[#464555]"><span className="size-[0.52rem] rounded-full bg-[#08744f] shadow-[0_0_0_3px_rgb(8_116_79_/_9%)]" /> Enterprise Pipeline Infrastructure</p>
+        <h1 className="m-0 max-w-[67rem] text-[clamp(2.5rem,4.2vw,3.6rem)] leading-[1.12] font-semibold tracking-[-0.055em]" id="hero-title">
+          Turn Every Form Submission Into an <span className="text-primary-container">Opportunity.</span>
         </h1>
-        <p className="hero-description">
+        <p className="mt-[1.3rem] max-w-[53rem] text-[clamp(1rem,1.45vw,1.2rem)] leading-[1.7] text-text-muted">
           Create high-converting, customizable lead capture forms in minutes.
           Embed them effortlessly into any website, sync submissions in real
           time, and convert incoming leads with an enterprise pipeline built for
           modern teams.
         </p>
-        <div className="hero-actions">
+        <div className="mt-[2.3rem] flex items-center justify-center gap-[0.8rem]">
           <ButtonLink href="#pricing" size="lg">
             Get Started Free <ArrowRight aria-hidden="true" size={19} />
           </ButtonLink>
@@ -212,14 +212,14 @@ export function HeroSection() {
             <CalendarDays aria-hidden="true" size={19} /> Book a Demo
           </ButtonLink>
         </div>
-        <ul className="trial-assurances">
+        <ul className="mt-[1.15rem] mb-0 flex list-none flex-wrap justify-center gap-x-[1.15rem] gap-y-[0.7rem] p-0 text-[0.8rem] font-medium text-[#5b5c6d]">
           <li><CheckCircle2 aria-hidden="true" size={16} /> No credit card required</li>
           <li>14-day free trial</li>
           <li>Full API &amp; webhook access</li>
         </ul>
         <TrustMarks />
       </div>
-      <div className="hero-preview-wrap content-width">
+      <div className="relative z-[1] mx-auto mt-[4.3rem] w-[min(100%-2.5rem,78rem)]">
         <ProductPreview />
       </div>
     </section>

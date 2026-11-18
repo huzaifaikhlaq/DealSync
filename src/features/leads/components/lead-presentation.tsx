@@ -1,6 +1,6 @@
 import { ArrowRight, Bolt, Eye } from "lucide-react";
 import type { ReactNode } from "react";
-import type { Lead } from "../types/lead";
+import type { Lead } from "../types/lead.types";
 
 export function LeadMetric({
   label,

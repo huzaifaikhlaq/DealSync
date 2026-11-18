@@ -8,7 +8,7 @@ import {
 import { Modal } from "@/components/ui/modal";
 import "./leads.css";
 import { leads as initialLeads } from "./data/leads";
-import type { Lead } from "./types/lead";
+import type { Lead } from "./types/lead.types";
 import {
   LeadCard,
   LeadMetric,
