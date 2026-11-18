@@ -1,0 +1,42 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dealsync}
+      POSTGRES_USER: ${POSTGRES_USER:-dealsync_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dealsync_user}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-dealsync}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    volumes:
+      - .:/app
+      - app_node_modules:/app/node_modules
+      - app_next:/app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dealsync}
+      POSTGRES_USER: ${POSTGRES_USER:-dealsync_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  app_node_modules:
+  app_next:
+  postgres_data:
