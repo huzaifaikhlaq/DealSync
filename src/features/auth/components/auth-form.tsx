@@ -1,402 +1,275 @@
+
 "use client";
 
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
-import { ArrowRight, Eye, EyeOff, Layers3, LockKeyhole } from "lucide-react";
-import type {
-  AuthFieldErrors,
-  AuthFieldName,
-  AuthMode,
-} from "../types/auth.types";
-import styles from "./auth.module.css";
+import { Layers3, Loader2 } from "lucide-react";
 
-type AuthFormProps = {
+type AuthMode = "login" | "register";
+
+interface AuthFormProps {
   mode: AuthMode;
-  redirectTo: string;
-  initialError?: string;
-};
+  next?: string;
+}
 
-type ApiErrorPayload = {
+interface AuthApiResponse {
+  success: boolean;
   error?: {
-    message?: unknown;
-    details?: unknown;
+    code: string;
+    message: string;
   };
-};
-
-const fieldNames: AuthFieldName[] = [
-  "name",
-  "email",
-  "password",
-  "confirmPassword",
-];
-
-function getFieldErrors(details: unknown): AuthFieldErrors {
-  if (typeof details !== "object" || details === null) return {};
-
-  const errors: AuthFieldErrors = {};
-  for (const field of fieldNames) {
-    const messages = (details as Record<string, unknown>)[field];
-    if (
-      Array.isArray(messages) &&
-      messages.every((message) => typeof message === "string")
-    ) {
-      errors[field] = messages;
-    }
-  }
-  return errors;
 }
 
 export function AuthForm({
   mode,
-  redirectTo,
-  initialError,
+  next = "/dashboard",
 }: AuthFormProps) {
   const router = useRouter();
-  const headingId = useId();
-  const nameId = useId();
-  const emailId = useId();
-  const passwordId = useId();
-  const confirmPasswordId = useId();
-  const passwordHintId = useId();
-  const nameRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-  const confirmPasswordRef = useRef<HTMLInputElement>(null);
-  const [pending, setPending] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState(initialError ?? "");
-  const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
   const isRegister = mode === "register";
 
-  useEffect(() => {
-    if (fieldErrors.name) nameRef.current?.focus();
-    else if (fieldErrors.email) emailRef.current?.focus();
-    else if (fieldErrors.password) passwordRef.current?.focus();
-    else if (fieldErrors.confirmPassword) confirmPasswordRef.current?.focus();
-  }, [fieldErrors]);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
 
-  function clearFieldError(field: AuthFieldName) {
-    setFieldErrors((current) => {
-      if (!current[field]) return current;
-      const next = { ...current };
-      delete next[field];
-      return next;
-    });
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
-    setMessage("");
-    setFieldErrors({});
+
+    if (pending) return;
+
+    setError("");
+
+    if (isRegister && password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setPending(true);
 
     try {
-      const formData = new FormData(event.currentTarget);
-      const response = await fetch("/api/auth/" + mode, {
+      const endpoint = isRegister
+        ? "/api/auth/register"
+        : "/api/auth/login";
+
+      const body = isRegister
+        ? { name, email, password }
+        : { email, password };
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
-          Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(Object.fromEntries(formData.entries())),
+        credentials: "same-origin",
+        body: JSON.stringify(body),
       });
 
-      const payload = (await response.json().catch(() => null)) as
-        | ApiErrorPayload
-        | null;
-      if (!response.ok) {
-        setMessage(
-          typeof payload?.error?.message === "string"
-            ? payload.error.message
-            : "We couldn't sign you in. Try again.",
+      const result =
+        (await response.json()) as AuthApiResponse;
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error?.message ??
+          "Authentication failed",
         );
-        setFieldErrors(getFieldErrors(payload?.error?.details));
-        return;
       }
 
-      router.replace(redirectTo);
+      router.replace(next);
       router.refresh();
-    } catch {
-      setMessage("Connection problem. Check your internet and try again.");
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong",
+      );
     } finally {
       setPending(false);
     }
   }
 
-  const modeLabel = isRegister ? "Create account" : "Sign in";
-  const switchHref =
-    (isRegister ? "/login" : "/register") +
-    "?next=" +
-    encodeURIComponent(redirectTo);
-
   return (
-    <main className={styles.screen}>
-      <section className={styles.card}>
-        <aside className={styles.brandPanel} aria-label="About DealSync">
-          <Link className={styles.brand} href="/">
-            <span className={styles.brandMark} aria-hidden="true">
-              <Layers3 size={20} strokeWidth={2.5} />
-            </span>
-            <span>DealSync</span>
-          </Link>
+    <main className="flex min-h-screen items-center justify-center bg-[#faf8ff] px-4 py-12">
+      <div className="w-full max-w-md">
+        <Link
+          href="/"
+          className="mb-8 flex items-center justify-center gap-3"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#4f46e5] text-white">
+            <Layers3 size={22} />
+          </span>
+          <span className="text-2xl font-bold tracking-tight text-[#131b2e]">
+            DealSync
+          </span>
+        </Link>
 
-          <div className={styles.brandCopy}>
-            <p className={styles.eyebrow}>Your revenue workspace</p>
-            <h2>Every lead has a next step.</h2>
-            <p>
-              Keep forms, conversations, and pipeline activity in sync from the
-              first click to the close.
-            </p>
-          </div>
+        <section className="rounded-2xl border border-[#e8e6f2] bg-white p-7 shadow-sm sm:p-9">
+          <h1 className="text-2xl font-semibold text-[#131b2e]">
+            {isRegister
+              ? "Create your account"
+              : "Welcome back"}
+          </h1>
 
-          <div className={styles.preview} aria-label="Workspace preview">
-            <div className={styles.previewHeader}>
-              <span className={styles.previewDots} aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
-              <span>Pipeline overview</span>
-              <span className={styles.liveBadge}>
-                <i aria-hidden="true" />
-                Live
-              </span>
-            </div>
-            <div className={styles.previewMetric}>
-              <div>
-                <span>New opportunities</span>
-                <strong>128</strong>
-              </div>
-              <span className={styles.metricTrend}>+18.4%</span>
-            </div>
-            <div className={styles.previewBars} aria-hidden="true">
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className={styles.previewFooter}>
-              <span>
-                <i className={styles.dotBlue} aria-hidden="true" />
-                Captured
-              </span>
-              <span>
-                <i className={styles.dotMint} aria-hidden="true" />
-                Qualified
-              </span>
-              <span>Last 30 days</span>
-            </div>
-          </div>
-
-          <p className={styles.securityNote}>
-            <LockKeyhole size={15} aria-hidden="true" />
-            Your workspace stays private and protected.
+          <p className="mt-2 text-sm text-[#55586c]">
+            {isRegister
+              ? "Start collecting leads without building a backend."
+              : "Sign in to manage your forms and leads."}
           </p>
-          <span className={styles.orbOne} aria-hidden="true" />
-          <span className={styles.orbTwo} aria-hidden="true" />
-        </aside>
 
-        <div className={styles.formPanel}>
-          <Link className={styles.mobileBrand} href="/">
-            <span className={styles.brandMark} aria-hidden="true">
-              <Layers3 size={19} strokeWidth={2.5} />
-            </span>
-            <span>DealSync</span>
-          </Link>
-
-          <div className={styles.formContent}>
-            <p className={styles.formEyebrow}>
-              <span className={styles.formEyebrowIcon} aria-hidden="true">
-                <LockKeyhole size={14} />
-              </span>
-              Secure workspace access
-            </p>
-            <h1 id={headingId}>
-              {isRegister ? "Create your account" : "Welcome back"}
-            </h1>
-            <p className={styles.formIntro}>
-              {isRegister
-                ? "Start bringing every lead into focus."
-                : "Sign in to pick up right where your team left off."}
-            </p>
-
-            <form
-              action={"/api/auth/" + mode}
-              aria-labelledby={headingId}
-              className={styles.form}
-              method="post"
-              onSubmit={handleSubmit}
-            >
-              <input name="redirectTo" type="hidden" value={redirectTo} />
-
-              {message ? (
-                <p className={styles.notice} role="status" aria-live="polite">
-                  {message}
-                </p>
-              ) : null}
-
-              {isRegister ? (
-                <div className={styles.field}>
-                  <label htmlFor={nameId}>Full name</label>
-                  <input
-                    autoComplete="name"
-                    className={fieldErrors.name ? styles.invalidInput : ""}
-                    id={nameId}
-                    maxLength={100}
-                    minLength={2}
-                    name="name"
-                    onChange={() => clearFieldError("name")}
-                    ref={nameRef}
-                    required
-                    type="text"
-                    aria-describedby={fieldErrors.name ? nameId + "-error" : undefined}
-                    aria-invalid={Boolean(fieldErrors.name)}
-                  />
-                  {fieldErrors.name ? (
-                    <span className={styles.fieldError} id={nameId + "-error"}>
-                      {fieldErrors.name[0]}
-                    </span>
-                  ) : null}
-                </div>
-              ) : null}
-
-              <div className={styles.field}>
-                <label htmlFor={emailId}>Work email</label>
+          <form
+            onSubmit={handleSubmit}
+            className="mt-7 space-y-5"
+          >
+            {isRegister && (
+              <div>
+                <label
+                  htmlFor="fullName"
+                  className="mb-2 block text-sm font-medium"
+                >
+                  Full name
+                </label>
                 <input
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  className={fieldErrors.email ? styles.invalidInput : ""}
-                  id={emailId}
-                  maxLength={254}
-                  name="email"
-                  onChange={() => clearFieldError("email")}
-                  ref={emailRef}
+                  id="fullName"
+                  type="text"
+                  autoComplete="name"
                   required
-                  spellCheck={false}
-                  type="email"
-                  aria-describedby={fieldErrors.email ? emailId + "-error" : undefined}
-                  aria-invalid={Boolean(fieldErrors.email)}
+                  minLength={2}
+                  maxLength={100}
+                  value={name}
+                  onChange={(event) =>
+                    setName(event.target.value)
+                  }
+                  className="w-full rounded-lg border border-[#d9d6e7] bg-white px-4 py-3 text-sm outline-none focus:border-[#4f46e5]"
+                  placeholder="Your name"
                 />
-                {fieldErrors.email ? (
-                  <span className={styles.fieldError} id={emailId + "-error"}>
-                    {fieldErrors.email[0]}
-                  </span>
-                ) : null}
               </div>
+            )}
 
-              <div className={styles.field}>
-                <label htmlFor={passwordId}>Password</label>
-                {isRegister ? (
-                  <p className={styles.fieldHint} id={passwordHintId}>
-                    Use at least 12 characters.
-                  </p>
-                ) : null}
-                <div className={styles.passwordField}>
-                  <input
-                    autoComplete={isRegister ? "new-password" : "current-password"}
-                    className={fieldErrors.password ? styles.invalidInput : ""}
-                    id={passwordId}
-                    maxLength={128}
-                    minLength={isRegister ? 12 : undefined}
-                    name="password"
-                    onChange={() => clearFieldError("password")}
-                    ref={passwordRef}
-                    required
-                    type={showPassword ? "text" : "password"}
-                    aria-describedby={
-                      (isRegister ? passwordHintId : "") +
-                      (fieldErrors.password ? " " + passwordId + "-error" : "")
-                    }
-                    aria-invalid={Boolean(fieldErrors.password)}
-                  />
-                  <button
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    aria-pressed={showPassword}
-                    className={styles.passwordToggle}
-                    onClick={() => setShowPassword((visible) => !visible)}
-                    type="button"
-                  >
-                    {showPassword ? (
-                      <EyeOff aria-hidden="true" size={18} />
-                    ) : (
-                      <Eye aria-hidden="true" size={18} />
-                    )}
-                  </button>
-                </div>
-                {fieldErrors.password ? (
-                  <span className={styles.fieldError} id={passwordId + "-error"}>
-                    {fieldErrors.password[0]}
-                  </span>
-                ) : null}
-              </div>
-
-              {isRegister ? (
-                <div className={styles.field}>
-                  <label htmlFor={confirmPasswordId}>Confirm password</label>
-                  <input
-                    autoComplete="new-password"
-                    className={
-                      fieldErrors.confirmPassword ? styles.invalidInput : ""
-                    }
-                    id={confirmPasswordId}
-                    maxLength={128}
-                    minLength={12}
-                    name="confirmPassword"
-                    onChange={() => clearFieldError("confirmPassword")}
-                    ref={confirmPasswordRef}
-                    required
-                    type={showPassword ? "text" : "password"}
-                    aria-describedby={
-                      fieldErrors.confirmPassword
-                        ? confirmPasswordId + "-error"
-                        : undefined
-                    }
-                    aria-invalid={Boolean(fieldErrors.confirmPassword)}
-                  />
-                  {fieldErrors.confirmPassword ? (
-                    <span
-                      className={styles.fieldError}
-                      id={confirmPasswordId + "-error"}
-                    >
-                      {fieldErrors.confirmPassword[0]}
-                    </span>
-                  ) : null}
-                </div>
-              ) : null}
-
-              <button
-                className={styles.submitButton}
-                disabled={pending}
-                type="submit"
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium"
               >
-                <span>{pending ? "Please wait…" : modeLabel}</span>
-                <ArrowRight aria-hidden="true" size={17} />
-              </button>
-            </form>
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                maxLength={254}
+                value={email}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
+                className="w-full rounded-lg border border-[#d9d6e7] bg-white px-4 py-3 text-sm outline-none focus:border-[#4f46e5]"
+                placeholder="you@example.com"
+              />
+            </div>
 
-            <p className={styles.switchPrompt}>
-              {isRegister ? "Already have an account?" : "New to DealSync?"}{" "}
-              <Link href={switchHref}>
-                {isRegister ? "Sign in" : "Create an account"}
-              </Link>
-            </p>
-            <p className={styles.formFootnote}>
-              By continuing, you agree to keep your workspace credentials
-              confidential.
-            </p>
-          </div>
-        </div>
-      </section>
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete={
+                  isRegister
+                    ? "new-password"
+                    : "current-password"
+                }
+                required
+                minLength={isRegister ? 12 : 1}
+                value={password}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
+                className="w-full rounded-lg border border-[#d9d6e7] bg-white px-4 py-3 text-sm outline-none focus:border-[#4f46e5]"
+                placeholder="Enter your password"
+              />
+              {isRegister && (
+                <p className="mt-1 text-xs text-[#55586c]">
+                  Use at least 12 characters.
+                </p>
+              )}
+            </div>
+
+            {isRegister && (
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="mb-2 block text-sm font-medium"
+                >
+                  Confirm password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(event) =>
+                    setConfirmPassword(event.target.value)
+                  }
+                  className="w-full rounded-lg border border-[#d9d6e7] bg-white px-4 py-3 text-sm outline-none focus:border-[#4f46e5]"
+                  placeholder="Repeat your password"
+                />
+              </div>
+            )}
+
+            {error && (
+              <p
+                role="alert"
+                className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={pending}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#4f46e5] px-4 py-3 font-semibold text-white transition hover:bg-[#3d34d7] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {pending && (
+                <Loader2
+                  size={18}
+                  className="animate-spin"
+                />
+              )}
+              {pending
+                ? "Please wait..."
+                : isRegister
+                  ? "Create account"
+                  : "Sign in"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-[#55586c]">
+            {isRegister
+              ? "Already have an account?"
+              : "Don't have an account?"}{" "}
+            <Link
+              href={
+                isRegister
+                  ? "/login"
+                  : `/register`
+              }
+              className="font-semibold text-[#4f46e5] hover:underline"
+            >
+              {isRegister ? "Sign in" : "Create account"}
+            </Link>
+          </p>
+        </section>
+      </div>
     </main>
   );
 }

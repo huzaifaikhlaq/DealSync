@@ -1,5 +1,9 @@
-import { registerController } from "@/features/auth/server/auth.controller";
 
-export function POST(request: Request): Promise<Response> {
-  return registerController(request);
+import type { NextRequest } from "next/server";
+import { authController } from "@/features/auth/server/auth.controller";
+
+export const runtime = "nodejs";
+
+export async function POST(request: NextRequest) {
+  return authController.register(request);
 }

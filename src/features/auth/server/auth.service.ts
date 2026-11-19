@@ -1,57 +1,94 @@
-import { ApiError } from "@/lib/http/api-error";
-import type { AuthUser } from "../types/auth.types";
-import type { LoginInput, RegisterInput } from "../schemas/auth.schema";
-import { hashPassword, verifyPassword } from "./auth.password";
-import * as repository from "./auth.repository";
+import "server-only";
 
-function isUniqueConstraintError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "P2002"
-  );
+import { Prisma } from "@/generated/prisma/client";
+import { ApiError } from "@/lib/http/api-error";
+
+import { authRepository } from "./auth.repository";
+import { generateSessionToken, hashSessionToken } from "./auth.session";
+import {
+  getDummyPasswordHash,
+  hashPassword,
+  verifyPassword,
+} from "./auth.password";
+
+import type { LoginInput, RegisterInput } from "../schemas/auth.schema";
+
+import type { AuthResult, AuthUser } from "../types/auth.types";
+
+function toPublicUser(user: AuthUser): AuthUser {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  };
 }
 
-export async function registerAccount(
-  input: Pick<RegisterInput, "name" | "email" | "password">,
-): Promise<AuthUser> {
-  const existingUser = await repository.findUserByEmail(input.email);
-  if (existingUser) {
-    throw new ApiError(409, "account_exists", "An account already uses this email.");
-  }
+export const authService = {
+  async register(input: RegisterInput): Promise<AuthResult> {
+    const passwordHash = await hashPassword(input.password);
+    const session = generateSessionToken();
 
-  const passwordHash = await hashPassword(input.password);
+    try {
+      const user = await authRepository.createUserWithSession({
+        name: input.name,
+        email: input.email,
+        passwordHash,
+        session,
+      });
 
-  try {
-    return await repository.createUser({
-      name: input.name,
-      email: input.email,
-      passwordHash,
-    });
-  } catch (error) {
-    if (isUniqueConstraintError(error)) {
+      return {
+        user,
+        session,
+      };
+    } catch (error) {
+      // Unique constraint on User.email.
+      // This also handles concurrent registration attempts.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new ApiError(
+          409,
+          "EMAIL_ALREADY_EXISTS",
+          "An account with this email already exists",
+        );
+      }
+
+      throw error;
+    }
+  },
+
+  async login(input: LoginInput): Promise<AuthResult> {
+    const user = await authRepository.findUserByEmail(input.email);
+
+    const passwordHash = user?.passwordHash ?? (await getDummyPasswordHash());
+
+    const passwordValid = await verifyPassword(passwordHash, input.password);
+
+    if (!user || !user.isActive || !passwordValid) {
       throw new ApiError(
-        409,
-        "account_exists",
-        "An account already uses this email.",
+        401,
+        "INVALID_CREDENTIALS",
+        "Invalid email or password",
       );
     }
-    throw error;
-  }
-}
 
-export async function loginAccount(
-  input: Pick<LoginInput, "email" | "password">,
-): Promise<AuthUser> {
-  const user = await repository.findUserByEmail(input.email);
-  const passwordIsValid = user
-    ? await verifyPassword(input.password, user.passwordHash)
-    : false;
+    const session = generateSessionToken();
 
-  if (!user || !passwordIsValid) {
-    throw new ApiError(401, "invalid_credentials", "Email or password is incorrect.");
-  }
+    await authRepository.createSession(user.id, session);
 
-  return { id: user.id, name: user.name, email: user.email };
-}
+    return {
+      user: toPublicUser(user),
+      session,
+    };
+  },
+
+  async logout(token: string | undefined): Promise<void> {
+    if (!token) return;
+
+    const tokenHash = hashSessionToken(token);
+    if (!tokenHash) return;
+
+    await authRepository.revokeSession(tokenHash);
+  },
+};

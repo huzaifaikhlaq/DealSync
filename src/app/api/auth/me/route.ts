@@ -1,5 +1,8 @@
-import { meController } from "@/features/auth/server/auth.controller";
+import type { NextRequest } from "next/server";
+import { authController } from "@/features/auth/server/auth.controller";
 
-export function GET(): Promise<Response> {
-  return meController();
+export const runtime = "nodejs";
+
+export async function GET(request: NextRequest) {
+  return authController.me(request);
 }

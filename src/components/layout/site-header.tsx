@@ -71,11 +71,11 @@ export function SiteHeader() {
     <>
       <div className="announcement-bar">
         <span className="announcement-pill">New</span>
-        <a href="#features" className="announcement-link">
+        <Link href="#features" className="announcement-link">
           DealSync 2.0 is live — seamless webhook &amp; CRM sync with 50+
           integrations
           <ArrowRight aria-hidden="true" size={17} />
-        </a>
+        </Link>
       </div>
       <header className={`site-header${isWide ? " is-wide" : ""}`} ref={headerRef}>
         <div className="site-header-inner" ref={innerRef}>
@@ -117,7 +117,7 @@ export function SiteHeader() {
             >
               {navigation.map((item) => (
                 <li key={item.label}>
-                  <a
+                  <Link
                     href={item.href}
                     onClick={() => {
                       const menu = menuRef.current;
@@ -125,7 +125,7 @@ export function SiteHeader() {
                     }}
                   >
                     {item.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
