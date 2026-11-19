@@ -8,8 +8,6 @@ import {
   useDashboardSearchControls,
 } from "./dashboard-context";
 import { DashboardBreadcrumbs } from "./dashboard-breadcrumbs";
-import { LogoutButton } from
-  "@/features/auth/components/logout-button";
 
 const pageLabels: Record<string, string> = {
   "/dashboard": "Workspace",
@@ -60,7 +58,6 @@ export function DashboardTopbar({ onOpenMobileNav }: DashboardTopbarProps) {
           <Bell size={19} />
           <i />
         </button>
-        <LogoutButton />
         <div className="avatar avatar-photo top-avatar">MV</div>
       </div>
       {notice && (

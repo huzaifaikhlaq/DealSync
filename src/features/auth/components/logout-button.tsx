@@ -35,13 +35,13 @@ export function LogoutButton() {
     return (
         <button
             type="button"
-            className="icon-button"
-            aria-label="Sign out"
-            title="Sign out"
+            className="sidebar-logout-button"
+            aria-busy={pending}
             disabled={pending}
             onClick={handleLogout}
         >
-            <LogOut size={19} />
+            <LogOut size={18} aria-hidden="true" />
+            <span>{pending ? "Signing out…" : "Sign out"}</span>
         </button>
     );
 }

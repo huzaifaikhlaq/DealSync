@@ -1,6 +1,7 @@
 "use client";
 
 import { CircleHelp, Sparkles, X } from "lucide-react";
+import { LogoutButton } from "@/features/auth/components/logout-button";
 import { DashboardNavigation } from "./dashboard-navigation";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
@@ -36,15 +37,6 @@ export function DashboardSidebar({
       <WorkspaceSwitcher />
       <DashboardNavigation onNavigate={onClose} />
       <div className="sidebar-bottom">
-        <button className="dash-nav-item" type="button" aria-disabled="true">
-          <CircleHelp size={19} />
-          <span>Help &amp; Support</span>
-        </button>
-        <div className="system-status">
-          <i />
-          <span>Systems Operational</span>
-          <strong>99.98%</strong>
-        </div>
         <div className="sidebar-profile">
           <div className="avatar avatar-photo">MV</div>
           <span>
@@ -52,6 +44,7 @@ export function DashboardSidebar({
             <small>Company Admin</small>
           </span>
         </div>
+        <LogoutButton />
       </div>
     </aside>
   );
