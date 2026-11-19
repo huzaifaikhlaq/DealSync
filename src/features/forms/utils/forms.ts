@@ -25,16 +25,22 @@ export function filterAndSortForms(
       );
     })
     .sort((a, b) => {
-      if (filters.sort === "name") return a.title.localeCompare(b.title);
+      if (filters.sort === "name") {
+        return a.title.localeCompare(b.title);
+      }
+
       if (filters.sort === "submissions") {
         return (
-          Number(b.submissions.replace(",", "")) -
-          Number(a.submissions.replace(",", ""))
+          Number(b.submissions.replaceAll(",", "")) -
+          Number(a.submissions.replaceAll(",", ""))
         );
       }
-      if (a.id > 1_000_000_000_000) return -1;
-      if (b.id > 1_000_000_000_000) return 1;
-      return a.id - b.id;
+
+      if (a.createdAt && b.createdAt) {
+        return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+      }
+
+      return String(b.id).localeCompare(String(a.id));
     });
 }
 

@@ -69,7 +69,7 @@ export function FormCard({
       <h2>{form.title}</h2>
       <button className="form-url" onClick={onCopy} disabled={archived}>
         <Link2 size={16} />
-        <span>app.dealsync.io/f/{form.slug}</span>
+        <span>/v1/forms/{form.publicId}/submissions</span>
         {archived ? (
           <span className="url-lock">Archived</span>
         ) : (

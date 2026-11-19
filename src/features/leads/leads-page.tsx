@@ -1,5 +1,7 @@
 "use client";
 
+
+
 import { useCallback, useMemo, useState, type FormEvent } from "react";
 import {
   useDashboardNewAction,
@@ -32,13 +34,19 @@ import {
   X,
 } from "lucide-react";
 
+
+import { useEffect } from "react";
+import { apiRequest, jsonBody } from "@/lib/http/client";
+import {
+  toLeadRecord,
+  type LeadListDTO,
+} from "./client/lead-api";
+import type { FormDTO } from "@/features/forms/client/form-api";
+
+
 export function LeadsPage() {
-  const [leads, setLeads] = useState(initialLeads);
   const [query, setQuery] = useState("");
-  const [formFilter, setFormFilter] = useState("All Forms (8)");
-  const [statusFilter, setStatusFilter] = useState("All Statuses");
-  const [range, setRange] = useState("Last 30 Days");
-  const [selected, setSelected] = useState<number[]>([]);
+
   const [view, setView] = useState<"table" | "compact" | "cards">("table");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -126,6 +134,106 @@ export function LeadsPage() {
     setNotice(`${name} added to your leads`);
     window.setTimeout(() => setNotice(""), 2800);
   }
+
+
+  async function updateLead(
+    leadId: string | number,
+    changes: {
+      status?: "NEW" | "CONTACTED" | "CLOSED";
+      notes?: string | null;
+    },
+  ) {
+    try {
+      await apiRequest(
+        `/api/leads/${leadId}`,
+        jsonBody("PATCH", changes),
+      );
+
+      setLeads((current) =>
+        current.map((lead) =>
+          lead.id === leadId
+            ? {
+              ...lead,
+              status: changes.status
+                ? {
+                  NEW: "New",
+                  CONTACTED: "Contacted",
+                  CLOSED: "Closed",
+                }[changes.status]
+                : lead.status,
+              notes:
+                changes.notes !== undefined
+                  ? changes.notes
+                  : lead.notes,
+            }
+            : lead,
+        ),
+      );
+
+      setNotice("Lead updated successfully");
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Unable to update lead",
+      );
+    }
+  }
+
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(pageSize),
+          range,
+        });
+
+        if (formFilter !== "all") {
+          params.set("formId", formFilter);
+        }
+
+        if (statusFilter !== "all") {
+          params.set("status", statusFilter);
+        }
+
+        const search = `${query} ${dashboardSearch}`.trim();
+
+        if (search) {
+          params.set("q", search);
+        }
+
+        const result = await apiRequest<LeadListDTO>(
+          `/api/leads?${params.toString()}`,
+          { signal: controller.signal },
+        );
+
+        if (!controller.signal.aborted) {
+          setLeads(result.items.map(toLeadRecord));
+          setTotal(result.total);
+          setLoading(false);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setNotice(
+            error instanceof Error
+              ? error.message
+              : "Failed to load leads",
+          );
+        }
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [page, pageSize, formFilter, statusFilter, range, query, dashboardSearch,]);
+
 
   return (
     <div className="dashboard-page leads-content">
@@ -312,15 +420,15 @@ export function LeadsPage() {
                         setSelected((current) =>
                           event.target.checked
                             ? Array.from(
-                                new Set([
-                                  ...current,
-                                  ...pageLeads.map((lead) => lead.id),
-                                ]),
-                              )
+                              new Set([
+                                ...current,
+                                ...pageLeads.map((lead) => lead.id),
+                              ]),
+                            )
                             : current.filter(
-                                (id) =>
-                                  !pageLeads.some((lead) => lead.id === id),
-                              ),
+                              (id) =>
+                                !pageLeads.some((lead) => lead.id === id),
+                            ),
                         )
                       }
                     />

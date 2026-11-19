@@ -2,14 +2,23 @@
 
 import "./forms.css";
 import { Modal } from "@/components/ui/modal";
+
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
   type ChangeEvent,
   type FormEvent,
 } from "react";
+
+import { apiRequest, jsonBody } from "@/lib/http/client";
+import {
+  toFormRecord,
+  type FormDTO,
+} from "./client/form-api";
+
 import {
   useDashboardNewAction,
   useDashboardSearch,
@@ -42,7 +51,29 @@ import {
 
 const sdkSnippet = '<script src="https://cdn.dealsync.io/v2/embed.js" async></script>';
 export function FormsPage() {
-  const [forms, setForms] = useState(seedForms);
+
+  const [forms, setForms] = useState<FormRecord[]>([]);
+  const [loadingForms, setLoadingForms] = useState(true);
+
+  const loadForms = useCallback(async () => {
+    try {
+      const records = await apiRequest<FormDTO[]>("/api/forms");
+      setForms(records.map(toFormRecord));
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Failed to load forms",
+      );
+    } finally {
+      setLoadingForms(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadForms();
+  }, [loadForms]);
+
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [category, setCategory] = useState("all");
@@ -89,68 +120,74 @@ export function FormsPage() {
       toast("Clipboard access is unavailable in this browser");
     }
   }
-  function createForm(event: FormEvent<HTMLFormElement>) {
+
+  async function createForm(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
-    const title = formName.trim() || "Untitled Form";
-    const newForm: FormRecord = {
-      id: Date.now(),
-      title,
-      status: "Draft • Unpublished",
-      category: "sales",
-      date: "Just now",
-      slug: title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, ""),
-      submissions: "0",
-      conversion: "—",
-      last: "Not live yet",
-      tags: ["New draft"],
-    };
-    setForms((current) => [newForm, ...current]);
-    setStatus("all");
-    setCategory("all");
-    setQuery("");
-    setSort("recent");
-    setPage(1);
-    setCreateOpen(false);
-    setFormName("");
-    toast(`${title} created as a draft`);
+
+    try {
+      await apiRequest<FormDTO>(
+        "/api/forms",
+        jsonBody("POST", {
+          name: formName.trim(),
+        }),
+      );
+
+      await loadForms();
+
+      setStatus("all");
+      setCategory("all");
+      setQuery("");
+      setSort("recent");
+      setPage(1);
+      setCreateOpen(false);
+      setFormName("");
+
+      toast("Form created successfully");
+    } catch (error) {
+      toast(
+        error instanceof Error
+          ? error.message
+          : "Unable to create form",
+      );
+    }
   }
-  function importFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const title = file.name.replace(/\.[^.]+$/g, "");
-    const added: FormRecord = {
-      id: Date.now(),
-      title,
-      status: "Draft • Unpublished",
-      category: "sales",
-      date: "Just now",
-      slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      submissions: "0",
-      conversion: "—",
-      last: "Imported draft",
-      tags: ["Imported"],
-    };
-    setForms((current) => [added, ...current]);
-    setImportOpen(false);
-    event.target.value = "";
-    toast(`${file.name} imported as a draft`);
-  }
-  function toggleStatus(id: number) {
-    setForms((current) =>
-      current.map((form) =>
-        form.id === id
-          ? {
-              ...form,
-              status: form.status === "Active" ? "Archived" : "Active",
-            }
-          : form,
-      ),
+
+
+  async function toggleStatus(id: string | number) {
+    const form = forms.find(
+      (item) => item.id === id,
     );
-    setOpenMenu(null);
+
+    if (!form) return;
+
+    const nextStatus =
+      form.status === "Active"
+        ? "ARCHIVED"
+        : "ACTIVE";
+
+    try {
+      await apiRequest(
+        `/api/forms/${id}`,
+        jsonBody("PATCH", {
+          status: nextStatus,
+        }),
+      );
+
+      await loadForms();
+      setOpenMenu(null);
+
+      toast("Form status updated");
+    } catch (error) {
+      toast(
+        error instanceof Error
+          ? error.message
+          : "Unable to update form",
+      );
+    }
   }
+
 
   return (
     <div className="dashboard-page forms-content">
@@ -366,10 +403,11 @@ export function FormsPage() {
             onToggle={() => toggleStatus(form.id)}
             onCopy={() =>
               void copy(
-                `https://app.dealsync.io/f/${form.slug}`,
-                "Form link copied",
+                `${window.location.origin}/v1/forms/${form.publicId}/submissions`,
+                "Form submission endpoint copied",
               )
             }
+
             onAction={(action) => toast(action)}
           />
         ))}
