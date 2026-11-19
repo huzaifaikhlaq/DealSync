@@ -1,4 +1,3 @@
-
 import "server-only";
 
 import { createHash, randomBytes } from "node:crypto";
@@ -6,10 +5,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { authRepository } from "./auth.repository";
-import type {
-  AuthUser,
-  SessionToken,
-} from "../types/auth.types";
+import type { AuthUser, SessionToken } from "../types/auth.types";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -18,16 +14,12 @@ export const SESSION_COOKIE_NAME =
     ? "__Host-dealsync_session"
     : "dealsync_session";
 
-export function hashSessionToken(
-  token: string,
-): string | null {
+export function hashSessionToken(token: string): string | null {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
     return null;
   }
 
-  return createHash("sha256")
-    .update(token)
-    .digest("hex");
+  return createHash("sha256").update(token).digest("hex");
 }
 
 export function generateSessionToken(): SessionToken {
@@ -41,9 +33,7 @@ export function generateSessionToken(): SessionToken {
   return {
     rawToken,
     tokenHash,
-    expiresAt: new Date(
-      Date.now() + SESSION_DURATION_MS,
-    ),
+    expiresAt: new Date(Date.now() + SESSION_DURATION_MS),
   };
 }
 
@@ -62,9 +52,7 @@ export function setSessionCookie(
   });
 }
 
-export function clearSessionCookie(
-  response: NextResponse,
-): void {
+export function clearSessionCookie(response: NextResponse): void {
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: "",
@@ -84,9 +72,7 @@ export async function validateSession(
   const tokenHash = hashSessionToken(token);
   if (!tokenHash) return null;
 
-  const session = await authRepository.findSessionByHash(
-    tokenHash,
-  );
+  const session = await authRepository.findSessionByHash(tokenHash);
 
   if (
     !session ||
@@ -101,16 +87,14 @@ export async function validateSession(
     id: session.user.id,
     name: session.user.name,
     email: session.user.email,
+    role: session.user.role,
   };
 }
 
-export async function getAuthenticatedUser():
-  Promise<AuthUser | null> {
+export async function getAuthenticatedUser(): Promise<AuthUser | null> {
   const cookieStore = await cookies();
 
-  const token = cookieStore.get(
-    SESSION_COOKIE_NAME,
-  )?.value;
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   return validateSession(token);
 }
