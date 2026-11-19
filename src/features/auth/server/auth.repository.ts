@@ -10,14 +10,19 @@ type CreateUserInput = {
   session: SessionToken;
 };
 
+const publicUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+} as const;
+
 export const authRepository = {
   async findUserByEmail(email: string) {
     return prisma.user.findUnique({
       where: { email },
       select: {
-        id: true,
-        name: true,
-        email: true,
+        ...publicUserSelect,
         passwordHash: true,
         isActive: true,
       },
@@ -31,12 +36,9 @@ export const authRepository = {
           name: input.name,
           email: input.email,
           passwordHash: input.passwordHash,
+          role: "OWNER",
         },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
+        select: publicUserSelect,
       });
 
       await tx.authSession.create({
@@ -63,18 +65,13 @@ export const authRepository = {
 
   async findSessionByHash(tokenHash: string) {
     return prisma.authSession.findUnique({
-      where: {
-        tokenHash,
-      },
+      where: { tokenHash },
       select: {
-        id: true,
         expiresAt: true,
         revokedAt: true,
         user: {
           select: {
-            id: true,
-            name: true,
-            email: true,
+            ...publicUserSelect,
             isActive: true,
           },
         },
@@ -84,23 +81,14 @@ export const authRepository = {
 
   async revokeSession(tokenHash: string) {
     return prisma.authSession.updateMany({
-      where: {
-        tokenHash,
-        revokedAt: null,
-      },
-      data: {
-        revokedAt: new Date(),
-      },
+      where: { tokenHash, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
   },
 
   async deleteExpiredSessions(now = new Date()) {
     return prisma.authSession.deleteMany({
-      where: {
-        expiresAt: {
-          lte: now,
-        },
-      },
+      where: { expiresAt: { lte: now } },
     });
   },
 };
