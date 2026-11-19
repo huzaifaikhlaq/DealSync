@@ -1,15 +1,17 @@
-export type AuthUser = {
+
+export interface AuthUser {
   id: string;
   name: string;
   email: string;
-};
+}
 
-export type AuthMode = "login" | "register";
+export interface SessionToken {
+  rawToken: string;
+  tokenHash: string;
+  expiresAt: Date;
+}
 
-export type AuthFieldName =
-  | "name"
-  | "email"
-  | "password"
-  | "confirmPassword";
-
-export type AuthFieldErrors = Partial<Record<AuthFieldName, string[]>>;
+export interface AuthResult {
+  user: AuthUser;
+  session: SessionToken;
+}

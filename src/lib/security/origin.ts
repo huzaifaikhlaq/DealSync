@@ -1,17 +1,21 @@
-export function isSameOriginRequest(request: Request): boolean {
-  const originHeader = request.headers.get("origin");
-  if (!originHeader || originHeader === "null") return false;
 
-  try {
-    const requestOrigin = new URL(request.url).origin;
-    const suppliedOrigin = new URL(originHeader).origin;
-    const fetchSite = request.headers.get("sec-fetch-site");
+import { ApiError } from "@/lib/http/api-error";
 
-    return (
-      suppliedOrigin === requestOrigin &&
-      (fetchSite === null || fetchSite === "same-origin" || fetchSite === "none")
+export function assertSameOrigin(request: Request): void {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!appUrl) {
+    throw new Error("NEXT_PUBLIC_APP_URL is not configured");
+  }
+
+  const trustedOrigin = new URL(appUrl).origin;
+  const requestOrigin = request.headers.get("origin");
+
+  if (requestOrigin !== trustedOrigin) {
+    throw new ApiError(
+      403,
+      "INVALID_ORIGIN",
+      "Request origin is not allowed",
     );
-  } catch {
-    return false;
   }
 }

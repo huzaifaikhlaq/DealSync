@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -8,22 +9,44 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  sessions     Session[]
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(254)
+  passwordHash String   @db.VarChar(255)
+  isActive     Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions AuthSession[]
+
+  @@index([createdAt])
 }
 
-model Session {
-  tokenHash String   @id @db.VarChar(64)
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model AuthSession {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  tokenHash String @unique @db.VarChar(64)
 
-  @@index([userId])
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  @@index([userId, expiresAt])
   @@index([expiresAt])
+}
+
+model AuthRateLimit {
+  key         String   @id @db.VarChar(64)
+  hits        Int      @default(0)
+  windowStart DateTime @default(now())
+
+  @@index([windowStart])
 }
