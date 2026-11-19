@@ -1,47 +1,66 @@
+
 import {
   Code2,
   Copy,
-  Eye,
-  FilePlus2,
+  FilePenLine,
   Link2,
   MoreHorizontal,
-  TrendingUp,
+  Settings2,
   Upload,
 } from "lucide-react";
+
 import type { FormRecord } from "../types/form.types";
+
+type FormCardProps = {
+  form: FormRecord;
+  menuOpen: boolean;
+  busy?: boolean;
+  onMenu: () => void;
+  onToggle: () => void;
+  onCopy: () => void;
+  onRename: () => void;
+  onConfigure: () => void;
+};
 
 export function FormCard({
   form,
   menuOpen,
+  busy = false,
   onMenu,
   onToggle,
   onCopy,
-  onAction,
-}: {
-  form: FormRecord;
-  menuOpen: boolean;
-  onMenu: () => void;
-  onToggle: () => void;
-  onCopy: () => void;
-  onAction: (message: string) => void;
-}) {
+  onRename,
+  onConfigure,
+}: FormCardProps) {
   const active = form.status === "Active";
   const draft = form.status.startsWith("Draft");
   const archived = form.status === "Archived";
+
+  const actionLabel = active
+    ? "Archive form"
+    : archived
+      ? "Restore form"
+      : "Publish form";
+
   return (
     <article
-      className={`form-list-card ${archived ? "archived-form" : ""} ${draft ? "draft-form" : ""}`}
+      className={`form-list-card ${archived ? "archived-form" : ""
+        } ${draft ? "draft-form" : ""}`}
     >
       <div className="form-card-meta">
         <span
-          className={`form-status ${active ? "active" : draft ? "draft" : "archived"}`}
+          className={`form-status ${active ? "active" : draft ? "draft" : "archived"
+            }`}
         >
           <i />
           {form.status}
         </span>
+
         <span>Created {form.date}</span>
+
         <div className="form-menu-wrap">
           <button
+            type="button"
             className="form-menu-trigger"
             aria-label={`Options for ${form.title}`}
             aria-expanded={menuOpen}
@@ -49,125 +68,113 @@ export function FormCard({
           >
             <MoreHorizontal size={19} />
           </button>
+
           {menuOpen && (
             <div className="form-menu">
-              <button onClick={onToggle}>
-                {active
-                  ? "Archive form"
-                  : archived
-                    ? "Restore form"
-                    : "Publish form"}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onToggle}
+              >
+                {actionLabel}
               </button>
-              <button onClick={onCopy}>Copy form link</button>
-              <button onClick={() => onAction(`Editing ${form.title}`)}>
-                Edit details
+
+              <button
+                type="button"
+                onClick={onCopy}
+              >
+                Copy endpoint
+              </button>
+
+              <button
+                type="button"
+                onClick={onRename}
+              >
+                Rename form
+              </button>
+
+              <button
+                type="button"
+                onClick={onConfigure}
+              >
+                Allowed origins
               </button>
             </div>
           )}
         </div>
       </div>
+
       <h2>{form.title}</h2>
-      <button className="form-url" onClick={onCopy} disabled={archived}>
+
+      <button
+        type="button"
+        className="form-url"
+        onClick={onCopy}
+      >
         <Link2 size={16} />
-        <span>/v1/forms/{form.publicId}/submissions</span>
-        {archived ? (
-          <span className="url-lock">Archived</span>
-        ) : (
-          <Copy size={15} />
-        )}
+        <span>
+          /v1/forms/{form.publicId}/submissions
+        </span>
+        <Copy size={15} />
       </button>
+
       <div className="form-performance">
         <div>
           <span>Submissions</span>
           <strong>{form.submissions}</strong>
-          <small className={draft ? "not-live" : ""}>
-            <ClockIcon />
-            {form.last}
-          </small>
+          <small>{form.last}</small>
         </div>
+
         <div>
           <span>Conversion</span>
-          <strong>{form.conversion}</strong>
+          <strong>—</strong>
           <div className="form-rate-track">
-            <i
-              className={
-                form.variant === "best"
-                  ? "best-rate"
-                  : archived
-                    ? "archived-rate"
-                    : ""
-              }
-              style={{
-                width:
-                  form.conversion === "—"
-                    ? "0%"
-                    : `${Math.min(parseFloat(form.conversion) * 4.3, 98)}%`,
-              }}
-            />
+            <i style={{ width: "0%" }} />
           </div>
         </div>
       </div>
+
       <div className="form-tags">
         {form.tags.map((tag) => (
           <span key={tag}>{tag}</span>
         ))}
       </div>
+
       <div className="form-card-actions">
-        {active ? (
-          <>
-            <button
-              onClick={() => onAction(`Embed instructions for ${form.title}`)}
-            >
-              <Code2 size={15} />
-              Embed
-            </button>
-            <button onClick={() => onAction(`Previewing ${form.title}`)}>
-              <Eye size={15} />
-              Preview
-            </button>
-            <button
-              className="edit-studio"
-              onClick={() => onAction(`Opening ${form.title} in Studio`)}
-            >
-              <FilePlus2 size={15} />
-              Edit in Studio
-            </button>
-          </>
-        ) : draft ? (
-          <>
-            <button onClick={() => onAction(`Previewing ${form.title}`)}>
-              <Eye size={15} />
-              Preview
-            </button>
-            <button className="publish-form" onClick={onToggle}>
-              <Upload size={15} />
-              Publish
-            </button>
-            <button onClick={() => onAction(`Continue editing ${form.title}`)}>
-              Continue Editing
-            </button>
-          </>
-        ) : (
-          <>
-            <button onClick={() => onAction(`Analytics for ${form.title}`)}>
-              <TrendingUp size={15} />
-              View Analytics
-            </button>
-            <button onClick={onToggle}>
-              <Upload size={15} />
-              Restore
-            </button>
-          </>
-        )}
+        <button
+          type="button"
+          onClick={onCopy}
+        >
+          <Code2 size={15} />
+          Copy API Endpoint
+        </button>
+
+        <button
+          type="button"
+          onClick={onRename}
+        >
+          <FilePenLine size={15} />
+          Rename
+        </button>
+
+        <button
+          type="button"
+          onClick={onConfigure}
+        >
+          <Settings2 size={15} />
+          Origins
+        </button>
+
+        <button
+          type="button"
+          className={draft ? "publish-form" : ""}
+          disabled={busy}
+          onClick={onToggle}
+        >
+          <Upload size={15} />
+          {actionLabel}
+        </button>
       </div>
     </article>
-  );
-}
-function ClockIcon() {
-  return (
-    <svg className="clock-icon" viewBox="0 0 16 16" aria-hidden="true">
-      <circle cx="8" cy="8" r="6.2" />
-      <path d="M8 4.5v3.8l2.5 1.4" />
-    </svg>
   );
 }

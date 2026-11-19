@@ -3,7 +3,10 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
-import type { ListLeadsInput, UpdateLeadInput } from "../schemas/lead.schema.ts";
+import type {
+  ListLeadsInput,
+  UpdateLeadInput,
+} from "../schemas/lead.schema.js";
 
 export const leadRepository = {
   async list(userId: string, input: ListLeadsInput) {

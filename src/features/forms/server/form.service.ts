@@ -1,8 +1,8 @@
 import "server-only";
 
 import { randomBytes } from "node:crypto";
-import { ApiError } from "@/lib/http/api-error";
 
+import { ApiError } from "@/lib/http/api-error";
 import { accountRequestRepository } from "@/features/account-requests/account-request.repository";
 
 import { formRepository } from "./form.repository";
@@ -31,7 +31,7 @@ export const formService = {
   async create(userId: string, input: CreateFormInput) {
     const approval = await accountRequestRepository.findMine(userId);
 
-    if (!approval || approval.status !== "APPROVED") {
+    if (approval?.status !== "APPROVED") {
       throw new ApiError(
         403,
         "ACCOUNT_NOT_APPROVED",

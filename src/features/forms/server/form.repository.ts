@@ -1,29 +1,33 @@
 import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
+
 import type { CreateFormInput, UpdateFormInput } from "../schemas/form.schema";
+
+const formInclude = {
+  _count: {
+    select: {
+      submissions: true,
+    },
+  },
+} as const;
 
 export const formRepository = {
   list(userId: string) {
     return prisma.form.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      include: {
-        _count: {
-          select: { submissions: true },
-        },
-      },
+      include: formInclude,
     });
   },
 
   findOwned(userId: string, formId: string) {
     return prisma.form.findFirst({
-      where: { id: formId, userId },
-      include: {
-        _count: {
-          select: { submissions: true },
-        },
+      where: {
+        id: formId,
+        userId,
       },
+      include: formInclude,
     });
   },
 
@@ -33,32 +37,46 @@ export const formRepository = {
     input: CreateFormInput,
     defaultOrigin: string,
   ) {
+    const allowedOrigins = input.allowedOrigins?.length
+      ? input.allowedOrigins
+      : [defaultOrigin];
+
     return prisma.form.create({
       data: {
         userId,
         publicId,
         name: input.name,
-        allowedOrigins: input.allowedOrigins?.length
-          ? [...new Set(input.allowedOrigins)]
-          : [defaultOrigin],
+        status: "DRAFT",
+        allowedOrigins: [...new Set(allowedOrigins)],
       },
-      include: {
-        _count: {
-          select: { submissions: true },
-        },
-      },
+      include: formInclude,
     });
   },
 
   async updateOwned(userId: string, formId: string, input: UpdateFormInput) {
-    const updated = await prisma.form.updateMany({
-      where: { id: formId, userId },
-      data: input,
+    const result = await prisma.form.updateMany({
+      where: {
+        id: formId,
+        userId,
+      },
+      data: {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+
+        ...(input.status !== undefined ? { status: input.status } : {}),
+
+        ...(input.allowedOrigins !== undefined
+          ? {
+              allowedOrigins: [...new Set(input.allowedOrigins)],
+            }
+          : {}),
+      },
     });
 
-    if (updated.count !== 1) return null;
+    if (result.count !== 1) {
+      return null;
+    }
 
-    return this.findOwned(userId, formId);
+    return formRepository.findOwned(userId, formId);
   },
 
   findActiveByPublicId(publicId: string) {
@@ -72,7 +90,9 @@ export const formRepository = {
           select: {
             isActive: true,
             accessRequest: {
-              select: { status: true },
+              select: {
+                status: true,
+              },
             },
           },
         },

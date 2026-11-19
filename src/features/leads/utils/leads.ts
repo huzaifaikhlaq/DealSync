@@ -7,23 +7,29 @@ export type LeadFilters = {
   status: string;
 };
 
-export function filterLeads(leads: readonly Lead[], filters: LeadFilters) {
+export function filterLeads(
+  leads: readonly Lead[],
+  filters: LeadFilters,
+): Lead[] {
   const query = filters.query.trim().toLowerCase();
 
   return leads.filter((lead) => {
-    const matchesQuery =
-      `${lead.name} ${lead.email} ${lead.company} ${lead.phone}`
-        .toLowerCase()
-        .includes(query);
-    const matchesForm =
-      filters.form === "All Forms (8)" || lead.form === filters.form;
+    const searchable = [lead.name, lead.email, lead.company, lead.phone]
+      .join(" ")
+      .toLowerCase();
+
+    const matchesQuery = !query || searchable.includes(query);
+
+    const matchesForm = filters.form === "all" || lead.formId === filters.form;
+
     const matchesStatus =
-      filters.status === "All Statuses" || lead.status === filters.status;
+      filters.status === "all" || lead.status.toUpperCase() === filters.status;
+
     return matchesQuery && matchesForm && matchesStatus;
   });
 }
 
-export function createLeadsCsv(leads: readonly Lead[]) {
+export function createLeadsCsv(leads: readonly Lead[]): string {
   return serializeCsv([
     [
       "Name",
@@ -34,7 +40,9 @@ export function createLeadsCsv(leads: readonly Lead[]) {
       "Source Form",
       "Status",
       "Submitted",
+      "Notes",
     ],
+
     ...leads.map((lead) => [
       lead.name,
       lead.role,
@@ -44,6 +52,7 @@ export function createLeadsCsv(leads: readonly Lead[]) {
       lead.form,
       lead.status,
       lead.submitted,
+      lead.notes ?? "",
     ]),
   ]);
 }

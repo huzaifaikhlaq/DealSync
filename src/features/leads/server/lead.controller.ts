@@ -10,7 +10,7 @@ import { errorResponse, successResponse } from "@/lib/http/response";
 
 import { listLeadsSchema, updateLeadSchema } from "../schemas/lead.schema";
 
-import { leadService } from "./lead.service.ts";
+import { leadService } from "./lead.service";
 
 export const leadController = {
   async list(request: NextRequest) {

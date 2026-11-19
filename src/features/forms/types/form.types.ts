@@ -10,7 +10,7 @@ export type FormRecord = {
   last: string;
   tags: string[];
   variant?: string;
-
   publicId?: string;
+  allowedOrigins?: string[];
   createdAt?: string;
 };

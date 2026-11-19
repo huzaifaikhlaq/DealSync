@@ -1,13 +1,16 @@
 import "server-only";
 
 import type { NextRequest } from "next/server";
+import { z } from "zod";
 
-import { prisma } from "@/lib/db/prisma";
 import { ApiError } from "@/lib/http/api-error";
 import { readJson } from "@/lib/http/read-json";
+
 import { errorResponse, successResponse } from "@/lib/http/response";
+
 import { assertSameOrigin } from "@/lib/security/origin";
-import { requireUser, requireAdmin } from "@/lib/security/authorize";
+
+import { requireAdmin, requireUser } from "@/lib/security/authorize";
 
 import {
   createAccountRequestSchema,
@@ -25,7 +28,9 @@ export const accountRequestController = {
         throw new ApiError(403, "FORBIDDEN", "Owner access required");
       }
 
-      return successResponse(await accountRequestService.getMine(user.id));
+      const request = await accountRequestService.getMine(user.id);
+
+      return successResponse(request);
     } catch (error) {
       return errorResponse(error);
     }
@@ -55,7 +60,9 @@ export const accountRequestController = {
     try {
       await requireAdmin();
 
-      return successResponse(await accountRequestService.listPending());
+      const requests = await accountRequestService.listPending();
+
+      return successResponse(requests);
     } catch (error) {
       return errorResponse(error);
     }
@@ -67,19 +74,17 @@ export const accountRequestController = {
 
       const admin = await requireAdmin();
 
-      // Validate route parameters before querying PostgreSQL.
-      const { z } = await import("zod");
       z.uuid().parse(requestId);
 
       const input = reviewAccountRequestSchema.parse(await readJson(request));
 
-      const reviewed = await accountRequestService.review(
+      const result = await accountRequestService.review(
         requestId,
         admin.id,
         input,
       );
 
-      return successResponse(reviewed);
+      return successResponse(result);
     } catch (error) {
       return errorResponse(error);
     }

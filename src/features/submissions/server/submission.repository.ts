@@ -1,7 +1,8 @@
 import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
-import type { SubmissionInput } from "../schemas/submission.schema.ts";
+
+import type { SubmissionInput } from "../schemas/submission.schema";
 
 export const submissionRepository = {
   create(formId: string, data: SubmissionInput) {
