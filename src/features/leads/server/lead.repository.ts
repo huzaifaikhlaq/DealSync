@@ -6,18 +6,30 @@ import { prisma } from "@/lib/db/prisma";
 import type {
   ListLeadsInput,
   UpdateLeadInput,
-} from "../schemas/lead.schema.js";
+} from "../schemas/lead.schema";
 
 export const leadRepository = {
   async list(userId: string, input: ListLeadsInput) {
+    const days = input.range === "all" ? null : Number.parseInt(input.range, 10);
+
     const where: Prisma.SubmissionWhereInput = {
       form: {
-        userId,
+        is: {
+          userId,
+        },
       },
 
       ...(input.formId ? { formId: input.formId } : {}),
 
       ...(input.status ? { status: input.status } : {}),
+
+      ...(days !== null
+        ? {
+            createdAt: {
+              gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000),
+            },
+          }
+        : {}),
 
       ...(input.q
         ? {
@@ -42,9 +54,7 @@ export const leadRepository = {
     const [items, total] = await prisma.$transaction([
       prisma.submission.findMany({
         where,
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: (input.page - 1) * input.limit,
         take: input.limit,
         include: {
@@ -74,7 +84,11 @@ export const leadRepository = {
     const changed = await prisma.submission.updateMany({
       where: {
         id: leadId,
-        form: { userId },
+        form: {
+          is: {
+            userId,
+          },
+        },
       },
       data,
     });
@@ -84,13 +98,18 @@ export const leadRepository = {
     return prisma.submission.findFirst({
       where: {
         id: leadId,
-        form: { userId },
+        form: {
+          is: {
+            userId,
+          },
+        },
       },
       include: {
         form: {
           select: {
             id: true,
             name: true,
+            publicId: true,
           },
         },
       },

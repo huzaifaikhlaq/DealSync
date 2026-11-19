@@ -15,6 +15,34 @@ type RequestRecord = {
     };
 };
 
+type RequestListResponse = {
+    success: boolean;
+    data: RequestRecord[];
+    error?: {
+        message?: string;
+    };
+};
+
+async function fetchPendingRequests(signal?: AbortSignal) {
+    const response = await fetch(
+        "/api/admin/account-requests",
+        {
+            cache: "no-store",
+            signal,
+        },
+    );
+
+    const result = (await response.json()) as RequestListResponse;
+
+    if (!response.ok || !result.success) {
+        throw new Error(
+            result.error?.message ?? "Unable to load requests",
+        );
+    }
+
+    return result.data;
+}
+
 export function AdminRequests() {
     const [requests, setRequests] = useState<RequestRecord[]>([]);
     const [notes, setNotes] = useState<Record<string, string>>({});
@@ -26,20 +54,7 @@ export function AdminRequests() {
         setError("");
 
         try {
-            const response = await fetch(
-                "/api/admin/account-requests",
-                { cache: "no-store" },
-            );
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    result.error?.message ?? "Unable to load requests",
-                );
-            }
-
-            setRequests(result.data);
+            setRequests(await fetchPendingRequests());
         } catch (error) {
             setError(
                 error instanceof Error
@@ -52,7 +67,34 @@ export function AdminRequests() {
     }
 
     useEffect(() => {
-        void load();
+        const controller = new AbortController();
+        let active = true;
+
+        void fetchPendingRequests(controller.signal)
+            .then((records) => {
+                if (active) {
+                    setRequests(records);
+                }
+            })
+            .catch((error: unknown) => {
+                if (active && !controller.signal.aborted) {
+                    setError(
+                        error instanceof Error
+                            ? error.message
+                            : "Unable to load requests",
+                    );
+                }
+            })
+            .finally(() => {
+                if (active) {
+                    setLoading(false);
+                }
+            });
+
+        return () => {
+            active = false;
+            controller.abort();
+        };
     }, []);
 
     async function review(
@@ -134,7 +176,7 @@ export function AdminRequests() {
                     <p className="mt-6 text-sm">Loading requests...</p>
                 )}
 
-                {!loading && requests.length === 0 && (
+                {!loading && !error && requests.length === 0 && (
                     <p className="mt-8 rounded-xl border bg-white p-8 text-center text-[#55586c]">
                         No pending account requests.
                     </p>

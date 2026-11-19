@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { leadController } from "@/features/leads/server/lead.controller.ts";
+import { leadController } from "@/features/leads/server/lead.controller";
 
 export const runtime = "nodejs";
 

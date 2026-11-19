@@ -90,7 +90,8 @@ export const submissionController = {
         );
       }
 
-      const { __dealsync_hp: _unused, ...cleanData } = data;
+      const cleanData = { ...data };
+      delete cleanData.__dealsync_hp;
 
       if (Object.keys(cleanData).length === 0) {
         throw new ApiError(

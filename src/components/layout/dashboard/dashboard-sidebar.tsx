@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { LogoutButton } from "@/features/auth/components/logout-button";
 import { DashboardNavigation } from "./dashboard-navigation";
 import { WorkspaceSwitcher } from "./workspace-switcher";

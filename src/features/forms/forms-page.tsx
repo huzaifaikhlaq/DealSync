@@ -102,8 +102,33 @@ export function FormsPage() {
   }, []);
 
   useEffect(() => {
-    void loadForms();
-  }, [loadForms]);
+    let active = true;
+
+    void apiRequest<FormDTO[]>("/api/forms")
+      .then((records) => {
+        if (active) {
+          setForms(records.map(toFormRecord));
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setNotice(
+            error instanceof Error
+              ? error.message
+              : "Failed to load forms",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filtered = useMemo(
     () =>
@@ -289,7 +314,7 @@ export function FormsPage() {
 
           <p>
             Create and manage API forms for your
-            website's lead collection.
+            website&apos;s lead collection.
           </p>
         </div>
 

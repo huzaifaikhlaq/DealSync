@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CircleHelp, Menu, Plus, Search } from "lucide-react";
+import { Bell, Menu, Plus, Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
