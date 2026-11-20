@@ -1,252 +1,229 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 
 type RequestRecord = {
-    id: string;
-    websiteUrl: string;
-    message: string | null;
-    createdAt: string;
-    user: {
-        name: string;
-        email: string;
-    };
+  id: string;
+  websiteUrl: string;
+  message: string | null;
+  createdAt: string;
+  user: {
+    name: string;
+    email: string;
+  };
 };
 
 type RequestListResponse = {
-    success: boolean;
-    data: RequestRecord[];
-    error?: {
-        message?: string;
-    };
+  success: boolean;
+  data: RequestRecord[];
+  error?: {
+    message?: string;
+  };
 };
 
 async function fetchPendingRequests(signal?: AbortSignal) {
-    const response = await fetch(
-        "/api/admin/account-requests",
-        {
-            cache: "no-store",
-            signal,
-        },
-    );
+  const response = await fetch("/api/admin/account-requests", {
+    cache: "no-store",
+    signal,
+  });
+  const result = (await response.json()) as RequestListResponse;
 
-    const result = (await response.json()) as RequestListResponse;
+  if (!response.ok || !result.success) {
+    throw new Error(result.error?.message ?? "Unable to load requests");
+  }
 
-    if (!response.ok || !result.success) {
-        throw new Error(
-            result.error?.message ?? "Unable to load requests",
-        );
-    }
-
-    return result.data;
+  return result.data;
 }
 
 export function AdminRequests() {
-    const [requests, setRequests] = useState<RequestRecord[]>([]);
-    const [notes, setNotes] = useState<Record<string, string>>({});
-    const [loading, setLoading] = useState(true);
-    const [busyId, setBusyId] = useState<string | null>(null);
-    const [error, setError] = useState("");
+  const [requests, setRequests] = useState<RequestRecord[]>([]);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-    async function load() {
-        setError("");
+  async function load() {
+    setLoading(true);
+    setError("");
+    setSuccess("");
 
-        try {
-            setRequests(await fetchPendingRequests());
-        } catch (error) {
-            setError(
-                error instanceof Error
-                    ? error.message
-                    : "Unable to load requests",
-            );
-        } finally {
-            setLoading(false);
-        }
+    try {
+      setRequests(await fetchPendingRequests());
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Unable to load requests",
+      );
+    } finally {
+      setLoading(false);
     }
+  }
 
-    useEffect(() => {
-        const controller = new AbortController();
-        let active = true;
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
 
-        void fetchPendingRequests(controller.signal)
-            .then((records) => {
-                if (active) {
-                    setRequests(records);
-                }
-            })
-            .catch((error: unknown) => {
-                if (active && !controller.signal.aborted) {
-                    setError(
-                        error instanceof Error
-                            ? error.message
-                            : "Unable to load requests",
-                    );
-                }
-            })
-            .finally(() => {
-                if (active) {
-                    setLoading(false);
-                }
-            });
-
-        return () => {
-            active = false;
-            controller.abort();
-        };
-    }, []);
-
-    async function review(
-        requestId: string,
-        decision: "APPROVED" | "REJECTED",
-    ) {
-        setBusyId(requestId);
-        setError("");
-
-        try {
-            const response = await fetch(
-                `/api/admin/account-requests/${requestId}`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        decision,
-                        note: notes[requestId] ?? "",
-                    }),
-                },
-            );
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    result.error?.message ?? "Review failed",
-                );
-            }
-
-            await load();
-        } catch (error) {
-            setError(
-                error instanceof Error
-                    ? error.message
-                    : "Review failed",
-            );
-        } finally {
-            setBusyId(null);
+    void fetchPendingRequests(controller.signal)
+      .then((records) => {
+        if (active) setRequests(records);
+      })
+      .catch((cause: unknown) => {
+        if (active && !controller.signal.aborted) {
+          setError(
+            cause instanceof Error ? cause.message : "Unable to load requests",
+          );
         }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, []);
+
+  async function review(
+    request: RequestRecord,
+    decision: "APPROVED" | "REJECTED",
+  ) {
+    setBusyId(request.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(
+        "/api/admin/account-requests/" + request.id,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            decision,
+            note: notes[request.id] ?? "",
+          }),
+        },
+      );
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error?.message ?? "Review failed");
+      }
+
+      setRequests((current) => current.filter((item) => item.id !== request.id));
+      setSuccess(
+        decision === "APPROVED"
+          ? "Access approved for " + request.user.name + "."
+          : "Access request rejected for " + request.user.name + ".",
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Review failed");
+    } finally {
+      setBusyId(null);
     }
+  }
 
-    return (
-        <main className="min-h-screen bg-[#faf8ff] px-5 py-12">
-            <div className="mx-auto max-w-5xl">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <Link
-                            href="/"
-                            className="text-sm font-semibold text-[#4f46e5]"
-                        >
-                            DealSync
-                        </Link>
-                        <h1 className="mt-2 text-3xl font-semibold">
-                            Account approvals
-                        </h1>
-                        <p className="mt-2 text-sm text-[#55586c]">
-                            Review website owners requesting access.
-                        </p>
-                    </div>
+  return (
+    <div className="dashboard-page admin-page">
+      <div className="admin-page-heading">
+        <div>
+          <p className="admin-eyebrow">ACCESS REVIEW</p>
+          <h1>Company Requests</h1>
+          <p>Review website owners requesting access to DealSync.</p>
+        </div>
+        <span className="admin-directory-total">
+          {loading ? "…" : requests.length.toLocaleString()} pending requests
+        </span>
+        <button
+          className="admin-button secondary"
+          type="button"
+          disabled={loading}
+          onClick={() => void load()}
+        >
+          <RefreshCw size={15} aria-hidden="true" />
+          Refresh requests
+        </button>
+      </div>
 
-                    <button
-                        className="rounded-lg border bg-white px-4 py-2 text-sm"
-                        onClick={() => void load()}
-                    >
-                        Refresh
-                    </button>
-                </div>
+      {error && (
+        <div className="admin-error" role="alert">
+          {error}
+        </div>
+      )}
+      {success && (
+        <p className="admin-success" role="status">
+          {success}
+        </p>
+      )}
+      {loading && (
+        <div className="admin-state" role="status">
+          <span className="admin-loader" aria-hidden="true" />
+          <p>Loading company requests…</p>
+        </div>
+      )}
+      {!loading && !error && requests.length === 0 && (
+        <div className="admin-panel">
+          <p className="admin-empty">No pending company requests.</p>
+        </div>
+      )}
 
-                {error && (
-                    <p role="alert" className="mt-6 text-red-600">
-                        {error}
-                    </p>
-                )}
+      {!loading && requests.length > 0 && (
+        <section className="admin-request-list" aria-label="Pending company requests">
+          {requests.map((item) => (
+            <article className="admin-request-card" key={item.id}>
+              <h2>{item.user.name}</h2>
+              <p>{item.user.email}</p>
+              <a href={item.websiteUrl} target="_blank" rel="noopener noreferrer">
+                {item.websiteUrl}
+              </a>
+              <time dateTime={item.createdAt}>
+                Requested {new Intl.DateTimeFormat(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(new Date(item.createdAt))}
+              </time>
+              {item.message && (
+                <p className="admin-request-message">{item.message}</p>
+              )}
 
-                {loading && (
-                    <p className="mt-6 text-sm">Loading requests...</p>
-                )}
+              <label className="admin-request-note">
+                <span>Admin review note (optional)</span>
+                <textarea
+                  value={notes[item.id] ?? ""}
+                  maxLength={1000}
+                  onChange={(event) =>
+                    setNotes((current) => ({
+                      ...current,
+                      [item.id]: event.target.value,
+                    }))
+                  }
+                />
+              </label>
 
-                {!loading && !error && requests.length === 0 && (
-                    <p className="mt-8 rounded-xl border bg-white p-8 text-center text-[#55586c]">
-                        No pending account requests.
-                    </p>
-                )}
-
-                <div className="mt-8 grid gap-4">
-                    {requests.map((item) => (
-                        <article
-                            key={item.id}
-                            className="rounded-xl border border-[#e8e6f2] bg-white p-6 shadow-sm"
-                        >
-                            <h2 className="text-lg font-semibold">
-                                {item.user.name}
-                            </h2>
-
-                            <p className="text-sm text-[#55586c]">
-                                {item.user.email}
-                            </p>
-
-                            <a
-                                href={item.websiteUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-3 inline-block break-all text-sm text-[#4f46e5] underline"
-                            >
-                                {item.websiteUrl}
-                            </a>
-
-                            {item.message && (
-                                <p className="mt-4 whitespace-pre-wrap text-sm">
-                                    {item.message}
-                                </p>
-                            )}
-
-                            <textarea
-                                aria-label={`Review note for ${item.user.name}`}
-                                placeholder="Review note (optional)"
-                                value={notes[item.id] ?? ""}
-                                maxLength={1000}
-                                onChange={(event) =>
-                                    setNotes((current) => ({
-                                        ...current,
-                                        [item.id]: event.target.value,
-                                    }))
-                                }
-                                className="mt-5 w-full rounded-lg border p-3 text-sm"
-                                rows={2}
-                            />
-
-                            <div className="mt-4 flex gap-3">
-                                <button
-                                    disabled={busyId !== null}
-                                    onClick={() => void review(item.id, "APPROVED")}
-                                    className="rounded-lg bg-[#4f46e5] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-                                >
-                                    Approve
-                                </button>
-
-                                <button
-                                    disabled={busyId !== null}
-                                    onClick={() => void review(item.id, "REJECTED")}
-                                    className="rounded-lg border border-red-200 px-5 py-2.5 text-sm font-medium text-red-700 disabled:opacity-50"
-                                >
-                                    Reject
-                                </button>
-                            </div>
-                        </article>
-                    ))}
-                </div>
-            </div>
-        </main>
-    );
+              <div className="admin-request-actions">
+                <button
+                  className="admin-button approve"
+                  type="button"
+                  disabled={busyId !== null}
+                  onClick={() => void review(item, "APPROVED")}
+                >
+                  Approve
+                </button>
+                <button
+                  className="admin-button reject"
+                  type="button"
+                  disabled={busyId !== null}
+                  onClick={() => void review(item, "REJECTED")}
+                >
+                  Reject
+                </button>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+    </div>
+  );
 }

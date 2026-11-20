@@ -1,12 +1,12 @@
 import {
-  // Activity,
-  // BriefcaseBusiness,
+  Building2,
   ClipboardList,
+  FileCheck2,
   LayoutDashboard,
-  // Settings,
   Users,
   type LucideIcon,
 } from "lucide-react";
+import type { UserRole } from "@/features/auth/types/auth.types";
 
 export type DashboardNavigationItem = {
   label: string;
@@ -15,11 +15,20 @@ export type DashboardNavigationItem = {
   available: boolean;
 };
 
-export const dashboardNavigation: DashboardNavigationItem[] = [
+export const ownerDashboardNavigation: DashboardNavigationItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard, available: true },
   { label: "Forms", href: "/dashboard/forms", icon: ClipboardList, available: true },
   { label: "Leads", href: "/dashboard/leads", icon: Users, available: true },
-  // { label: "Analytics", href: null, icon: Activity, available: false },
-  // { label: "Team", href: null, icon: BriefcaseBusiness, available: false },
-  // { label: "Settings", href: null, icon: Settings, available: false },
 ];
+
+export const adminDashboardNavigation: DashboardNavigationItem[] = [
+  { label: "Overview", href: "/admin", icon: LayoutDashboard, available: true },
+  { label: "Companies", href: "/admin/companies", icon: Building2, available: true },
+  { label: "Company Requests", href: "/admin/requests", icon: FileCheck2, available: true },
+];
+
+export function getDashboardNavigation(role: UserRole) {
+  return role === "SUPER_ADMIN"
+    ? adminDashboardNavigation
+    : ownerDashboardNavigation;
+}

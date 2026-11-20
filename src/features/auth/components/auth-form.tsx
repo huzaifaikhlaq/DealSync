@@ -5,6 +5,8 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Layers3, Loader2 } from "lucide-react";
+import type { UserRole } from "@/features/auth/types/auth.types";
+import { getLoginRedirectPath } from "@/lib/security/safe-redirect";
 
 type AuthMode = "login" | "register";
 
@@ -15,6 +17,11 @@ interface AuthFormProps {
 
 interface AuthApiResponse {
   success: boolean;
+  data?: {
+    user?: {
+      role: UserRole;
+    };
+  };
   error?: {
     code: string;
     message: string;
@@ -81,7 +88,14 @@ export function AuthForm({
         );
       }
 
-      router.replace(next);
+      const destination = isRegister
+        ? "/access"
+        : getLoginRedirectPath(
+            result.data?.user?.role ?? "OWNER",
+            next,
+          );
+
+      router.replace(destination);
       router.refresh();
     } catch (error) {
       setError(

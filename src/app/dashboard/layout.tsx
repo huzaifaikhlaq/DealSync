@@ -22,7 +22,7 @@ export default async function DashboardLayout({
   }
 
   if (user.role === "SUPER_ADMIN") {
-    redirect("/admin/requests");
+    redirect("/admin");
   }
 
   const request = await accountRequestRepository.findMine(user.id);
@@ -32,8 +32,6 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardShell user={{ name: user.name, email: user.email }}>
-      {children}
-    </DashboardShell>
+    <DashboardShell user={user}>{children}</DashboardShell>
   );
 }

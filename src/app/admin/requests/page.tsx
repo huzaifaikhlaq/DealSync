@@ -1,22 +1,11 @@
 
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { AdminRequests } from "@/features/account-requests/admin-requests";
 
-import { getAuthenticatedUser } from
-    "@/features/auth/server/auth.session";
-
-import { AdminRequests } from
-    "@/features/account-requests/admin-requests";
+export const metadata: Metadata = {
+  title: "Company Requests | DealSync",
+};
 
 export default async function AdminRequestsPage() {
-    const user = await getAuthenticatedUser();
-
-    if (!user) {
-        redirect("/login?next=/dashboard");
-    }
-
-    if (user.role !== "SUPER_ADMIN") {
-        redirect("/dashboard");
-    }
-
-    return <AdminRequests />;
+  return <AdminRequests />;
 }

@@ -11,7 +11,7 @@ export function DashboardShell({
   user,
 }: {
   children: ReactNode;
-  user: Pick<AuthUser, "name" | "email">;
+  user: Pick<AuthUser, "name" | "email" | "role">;
 }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 

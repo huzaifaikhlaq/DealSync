@@ -8,7 +8,7 @@ import { DashboardNavigation } from "./dashboard-navigation";
 type DashboardSidebarProps = {
   isMobileOpen: boolean;
   onClose: () => void;
-  user: Pick<AuthUser, "name" | "email">;
+  user: Pick<AuthUser, "name" | "email" | "role">;
 };
 
 export function DashboardSidebar({
@@ -44,7 +44,7 @@ export function DashboardSidebar({
           <X size={18} />
         </button>
       </div>
-      <DashboardNavigation onNavigate={onClose} />
+      <DashboardNavigation onNavigate={onClose} role={user.role} />
       <div className="sidebar-bottom">
         <div className="sidebar-profile">
           <div className="avatar lilac">{initials}</div>

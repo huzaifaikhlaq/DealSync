@@ -3,21 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { dashboardNavigation } from "@/features/dashboard/navigation";
+import type { UserRole } from "@/features/auth/types/auth.types";
+import { getDashboardNavigation } from "@/features/dashboard/navigation";
 
 export function DashboardNavigation({
   onNavigate,
+  role,
 }: {
   onNavigate: () => void;
+  role: UserRole;
 }) {
   const pathname = usePathname();
   const [message, setMessage] = useState("");
+  const navigation = getDashboardNavigation(role);
 
   return (
     <>
       <nav className="dash-nav" aria-label="Main navigation">
-        {dashboardNavigation.map(({ label, href, icon: Icon, available }) => {
-          const isCurrent = href === pathname;
+        {navigation.map(({ label, href, icon: Icon, available }) => {
+          const isCurrent =
+            href === pathname ||
+            (href !== null &&
+              href !== "/dashboard" &&
+              href !== "/admin" &&
+              pathname.startsWith(href + "/"));
           const className = `dash-nav-item ${isCurrent ? "selected" : ""}`;
 
           return href && available ? (

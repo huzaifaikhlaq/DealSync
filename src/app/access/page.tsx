@@ -18,7 +18,7 @@ export default async function AccessPage() {
     }
 
     if (user.role === "SUPER_ADMIN") {
-        redirect("/admin/requests");
+        redirect("/admin");
     }
 
     const request =
