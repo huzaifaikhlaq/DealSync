@@ -3,7 +3,6 @@ import type { FormRecord } from "../types/form.types";
 export type FormFilters = {
   query: string;
   status: string;
-  category: string;
   sort: string;
 };
 
@@ -14,14 +13,13 @@ export function filterAndSortForms(
   const query = filters.query.trim().toLowerCase();
   return forms
     .filter((form) => {
-      const matchesQuery = `${form.title} ${form.slug} ${form.tags.join(" ")}`
+      const matchesQuery = `${form.title} ${form.slug}`
         .toLowerCase()
         .includes(query);
       return (
         matchesQuery &&
         (filters.status === "all" ||
-          form.status.toLowerCase().startsWith(filters.status)) &&
-        (filters.category === "all" || form.category === filters.category)
+          form.status.toLowerCase().startsWith(filters.status))
       );
     })
     .sort((a, b) => {

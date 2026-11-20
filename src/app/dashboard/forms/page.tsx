@@ -6,6 +6,15 @@ export const metadata: Metadata = {
   description: "Create and manage your DealSync lead capture forms.",
 };
 
-export default function FormsRoute() {
-  return <FormsPage />;
+export default async function FormsRoute({
+  searchParams,
+}: {
+  searchParams: Promise<{ create?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const create = Array.isArray(params.create)
+    ? params.create[0]
+    : params.create;
+
+  return <FormsPage openCreateOnLoad={create === "1"} />;
 }

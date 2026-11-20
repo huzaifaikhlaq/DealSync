@@ -1,130 +1,93 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import {
-  ArrowDownToLine,
-  CalendarDays,
-  Check,
-  ChevronDown,
-  Plus,
-  X,
-} from "lucide-react";
-import {
-  useDashboardNewAction,
-  useDashboardSearch,
-} from "@/components/layout/dashboard/dashboard-context";
-import { createLeadReport } from "../utils/export-report";
-import { dashboardLeads } from "../data/overview-data";
-import { ActivityFeed } from "./activity-feed";
+import { ArrowDownToLine, Plus } from "lucide-react";
+import Link from "next/link";
+
+import { useDashboardSearch } from "@/components/layout/dashboard/dashboard-context";
+
+import type {
+  DashboardGranularity,
+  DashboardOverviewData,
+  DashboardRange,
+} from "../types/dashboard";
 import { LeadsTrendChart } from "./leads-trend-chart";
 import { OverviewMetrics } from "./overview-metrics";
 import { RecentLeads } from "./recent-leads";
+import { ReportingPeriodSelect } from "./reporting-period-select";
 import { StatusDistribution } from "./status-distribution";
 import { TopPerformingForms } from "./top-performing-forms";
 
-export function OverviewContent() {
-  const [period, setPeriod] = useState("Last 30 days");
-  const [notice, setNotice] = useState("");
-  const searchQuery = useDashboardSearch();
-  const showNotice = useCallback((message: string) => {
-    setNotice(message);
-    window.setTimeout(() => setNotice(""), 2800);
-  }, []);
-  const handleNew = useCallback(() => {
-    showNotice("Your new form is ready to configure");
-  }, [showNotice]);
-  useDashboardNewAction(handleNew);
+function rangeLabel(range: DashboardRange): string {
+  return `the last ${range.slice(0, -1)} days`;
+}
 
-  function exportReport() {
-    const csv = createLeadReport(dashboardLeads);
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(
-      new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    );
-    link.download = "dealsync-leads-report.csv";
-    link.click();
-    URL.revokeObjectURL(link.href);
-    showNotice("Report exported as CSV");
-  }
+export function OverviewContent({
+  data,
+  userName,
+  range,
+  granularity,
+}: {
+  data: DashboardOverviewData;
+  userName: string;
+  range: DashboardRange;
+  granularity: DashboardGranularity;
+}) {
+  const searchQuery = useDashboardSearch();
 
   return (
     <div className="dashboard-page overview-content" id="overview">
       <section className="welcome-card">
         <div>
           <div className="welcome-title">
-            <h1>
-              Good morning, Marcus! <span aria-hidden="true">👋</span>
-            </h1>
-            <span className="live-pill">
-              <i /> Live Sync Active
-            </span>
+            <h1>Welcome back, {userName}</h1>
           </div>
           <p>
-            Here&apos;s what&apos;s happening with your leads and capture forms
-            across <strong>Acme Cloud Systems</strong> today.
+            Review your forms and incoming submissions from {rangeLabel(range)}.
           </p>
         </div>
         <div className="welcome-actions">
-          <label className="select-control">
-            <CalendarDays size={17} />
-            <select
-              aria-label="Reporting date range"
-              value={period}
-              onChange={(event) => setPeriod(event.target.value)}
-            >
-              <option>Last 7 days</option>
-              <option>Last 30 days</option>
-              <option>Last 90 days</option>
-            </select>
-            <ChevronDown size={16} />
-          </label>
-          <button
+          <ReportingPeriodSelect range={range} granularity={granularity} />
+          <Link
             className="secondary-button"
-            type="button"
-            onClick={exportReport}
+            href={`/api/leads/export?range=${range}`}
           >
-            <ArrowDownToLine size={17} /> Export Report
-          </button>
-          <button className="primary-button" type="button" onClick={handleNew}>
-            <Plus size={18} /> Create New Form
-          </button>
+            <ArrowDownToLine size={17} />
+            Export CSV
+          </Link>
+          <Link className="primary-button" href="/dashboard/forms?create=1">
+            <Plus size={18} />
+            Create New Form
+          </Link>
         </div>
       </section>
 
-      <OverviewMetrics />
+      <OverviewMetrics metrics={data.metrics} range={range} />
 
       <section className="analytics-grid">
-        <LeadsTrendChart />
-        <StatusDistribution />
+        <LeadsTrendChart
+          points={data.trend}
+          range={range}
+          granularity={granularity}
+        />
+        <StatusDistribution counts={data.statuses} range={range} />
       </section>
 
-      <TopPerformingForms onManage={() => showNotice("Opening all forms")} />
+      <TopPerformingForms forms={data.forms} range={range} />
 
-      <section className="bottom-grid">
-        <RecentLeads query={searchQuery} onAction={showNotice} />
-        <ActivityFeed />
+      <section className="overview-bottom-grid">
+        <RecentLeads
+          leads={data.recentLeads}
+          query={searchQuery}
+          range={range}
+        />
       </section>
 
       <footer className="dash-footer">
-        <span>© 2024 DealSync</span>
+        <span>DealSync</span>
         <span>
-          All data synced just now <i />
+          Lead counts use submissions received during {rangeLabel(range)}.
         </span>
       </footer>
-
-      {notice && (
-        <div className="dash-toast" role="status">
-          <Check size={16} />
-          {notice}
-          <button
-            type="button"
-            aria-label="Dismiss notification"
-            onClick={() => setNotice("")}
-          >
-            <X size={15} />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -15,7 +15,7 @@ export type FormDTO = {
 
 export function toFormRecord(form: FormDTO): FormRecord {
   const statusLabels = {
-    DRAFT: "Draft • Unpublished",
+    DRAFT: "Draft",
     ACTIVE: "Active",
     ARCHIVED: "Archived",
   } as const;
@@ -24,15 +24,11 @@ export function toFormRecord(form: FormDTO): FormRecord {
     id: form.id,
     title: form.name,
     status: statusLabels[form.status],
-    category: "contact",
     date: new Date(form.createdAt).toLocaleDateString(),
     slug: form.publicId,
     publicId: form.publicId,
     allowedOrigins: form.allowedOrigins,
     createdAt: form.createdAt,
     submissions: String(form._count.submissions),
-    conversion: "—",
-    last: "View leads",
-    tags: ["API Form"],
   };
 }

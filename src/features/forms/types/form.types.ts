@@ -1,15 +1,10 @@
 export type FormRecord = {
-  id: string | number;
+  id: string;
   title: string;
-  status: "Active" | "Draft • Unpublished" | "Archived";
-  category: string;
+  status: "Active" | "Draft" | "Archived";
   date: string;
   slug: string;
   submissions: string;
-  conversion: string;
-  last: string;
-  tags: string[];
-  variant?: string;
   publicId?: string;
   allowedOrigins?: string[];
   createdAt?: string;

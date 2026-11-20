@@ -1,27 +1,42 @@
 "use client";
 
-import { Bell, Menu, Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { Menu, Plus, Search } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import {
-  useDashboardAction,
-  useDashboardSearchControls,
-} from "./dashboard-context";
+import type { AuthUser } from "@/features/auth/types/auth.types";
+import { useDashboardSearchControls } from "./dashboard-context";
 import { DashboardBreadcrumbs } from "./dashboard-breadcrumbs";
 
 const pageLabels: Record<string, string> = {
-  "/dashboard": "Workspace",
-  "/dashboard/forms": "Workspace",
-  "/dashboard/leads": "Workspace",
+  "/dashboard": "Overview",
+  "/dashboard/forms": "Forms",
+  "/dashboard/leads": "Leads",
 };
 
-type DashboardTopbarProps = { onOpenMobileNav: () => void };
+type DashboardTopbarProps = {
+  onOpenMobileNav: () => void;
+  user: Pick<AuthUser, "name" | "email">;
+};
 
-export function DashboardTopbar({ onOpenMobileNav }: DashboardTopbarProps) {
-  const [notice, setNotice] = useState("");
+export function DashboardTopbar({
+  onOpenMobileNav,
+  user,
+}: DashboardTopbarProps) {
   const pathname = usePathname();
   const { searchQuery, setSearchQuery } = useDashboardSearchControls();
-  const handleNew = useDashboardAction();
+  const initials = user.name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .toUpperCase();
+  const searchPlaceholder =
+    pathname === "/dashboard/forms"
+      ? "Search your forms..."
+      : pathname === "/dashboard/leads"
+        ? "Search leads by name or email..."
+        : "Search recent leads...";
 
   return (
     <header className="dash-topbar">
@@ -33,45 +48,25 @@ export function DashboardTopbar({ onOpenMobileNav }: DashboardTopbarProps) {
       >
         <Menu size={20} />
       </button>
-      <DashboardBreadcrumbs currentPage={pageLabels[pathname] ?? "Workspace"} />
+      <DashboardBreadcrumbs currentPage={pageLabels[pathname] ?? "Overview"} />
       <label className="global-search">
-        <Search size={19} />
+        <Search size={19} aria-hidden="true" />
         <input
           aria-label="Search this page"
-          placeholder="Search leads, forms, companies..."
+          placeholder={searchPlaceholder}
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
         />
-        <kbd>⌘ K</kbd>
       </label>
       <div className="top-actions">
-        <button className="new-button" type="button" onClick={handleNew}>
+        <Link className="new-button" href="/dashboard/forms?create=1">
           <Plus size={18} />
           <span>New</span>
-        </button>
-        <button
-          className="icon-button notification-button"
-          type="button"
-          aria-label="Notifications"
-          onClick={() => setNotice("You’re all caught up")}
-        >
-          <Bell size={19} />
-          <i />
-        </button>
-        <div className="avatar avatar-photo top-avatar">MV</div>
-      </div>
-      {notice && (
-        <div className="dash-toast" role="status">
-          {notice}
-          <button
-            type="button"
-            aria-label="Dismiss notification"
-            onClick={() => setNotice("")}
-          >
-            ×
-          </button>
+        </Link>
+        <div className="avatar lilac top-avatar" aria-label={user.name}>
+          {initials}
         </div>
-      )}
+      </div>
     </header>
   );
 }

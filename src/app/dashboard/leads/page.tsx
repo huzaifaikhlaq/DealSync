@@ -6,10 +6,19 @@ export const metadata: Metadata = {
   description: "Search, filter, and manage your incoming leads in DealSync.",
 };
 
-export default function LeadsRoute() {
+export default async function LeadsRoute({
+  searchParams,
+}: {
+  searchParams: Promise<{ leadId?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const leadId = Array.isArray(params.leadId)
+    ? params.leadId[0]
+    : params.leadId;
+
   return (
     <div className="overflow-hidden">
-      <LeadsPage />
+      <LeadsPage initialLeadId={leadId} />
     </div>
-  )
+  );
 }

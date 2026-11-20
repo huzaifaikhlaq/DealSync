@@ -1,48 +1,79 @@
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { performingForms } from "../data/overview-data";
 
-export function TopPerformingForms({ onManage }: { onManage: () => void }) {
+import type { DashboardForm, DashboardRange } from "../types/dashboard";
+
+function statusLabel(status: DashboardForm["status"]): string {
+  if (status === "ACTIVE") return "Active";
+  if (status === "ARCHIVED") return "Archived";
+  return "Draft";
+}
+
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+export function TopPerformingForms({
+  forms,
+  range,
+}: {
+  forms: DashboardForm[];
+  range: DashboardRange;
+}) {
+  const visibleForms = forms.slice(0, 4);
+
   return (
     <section className="panel forms-panel">
       <div className="panel-heading">
         <div>
-          <h2>Top Performing Forms</h2>
+          <h2>Your Forms</h2>
           <p>
-            Forms driving the highest submission volume and qualified pipeline
-            conversion
+            Submission counts from the last {range.slice(0, -1)} days, sorted by
+            volume.
           </p>
         </div>
-        <button className="text-link" type="button" onClick={onManage}>
-          Manage all forms <ArrowRight size={16} />
-        </button>
+        <Link className="text-link" href="/dashboard/forms">
+          Manage forms <ArrowRight size={16} />
+        </Link>
       </div>
-      <div className="forms-grid">
-        {performingForms.map((form) => (
-          <article className="form-card" key={form.title}>
-            <div className="form-meta">
-              <span className="active-tag">
-                <i />
-                Active
-              </span>
-              <span className={form.best ? "best-tag" : ""}>{form.tag}</span>
-            </div>
-            <h3>{form.title}</h3>
-            <p>{form.detail}</p>
-            <div className="form-stats">
-              <strong>
-                {form.count} <small>subs</small>
-              </strong>
-              <b className={form.best ? "best-tag" : ""}>{form.rate} conv.</b>
-            </div>
-            <div className="progress-track">
-              <i
-                className={form.best ? "green-fill" : ""}
-                style={{ width: form.bar }}
-              />
-            </div>
-          </article>
-        ))}
-      </div>
+      {forms.length === 0 ? (
+        <div className="dashboard-empty-state">
+          <p>You haven&apos;t created any forms yet.</p>
+          <Link className="text-link" href="/dashboard/forms?create=1">
+            Create your first form <ArrowRight size={16} />
+          </Link>
+        </div>
+      ) : (
+        <>
+          <div className="forms-grid">
+            {visibleForms.map((form) => (
+              <article className="form-card" key={form.id}>
+                <div className="form-meta">
+                  <span
+                    className={`overview-form-status ${form.status.toLowerCase()}`}
+                  >
+                    <i />
+                    {statusLabel(form.status)}
+                  </span>
+                  <span>Created {formatDate(form.createdAt)} UTC</span>
+                </div>
+                <h3 title={form.name}>{form.name}</h3>
+                <p>
+                  {form.submissionCount.toLocaleString("en-US")} submissions
+                </p>
+              </article>
+            ))}
+          </div>
+          {forms.length > visibleForms.length && (
+            <p className="forms-overview-note">
+              Showing the four forms with the most submissions in this period.
+            </p>
+          )}
+        </>
+      )}
     </section>
   );
 }

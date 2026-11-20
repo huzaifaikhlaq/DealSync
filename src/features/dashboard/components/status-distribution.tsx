@@ -1,62 +1,76 @@
-import { Check, MoreHorizontal } from "lucide-react";
+import type { DashboardRange, DashboardLeadStatus } from "../types/dashboard";
 
-const statuses = [
-  { color: "emerald", label: "Converted", count: "614", percent: "12.5%" },
-  {
-    color: "indigo-dark",
-    label: "Qualified",
-    count: "1,280",
-    percent: "26.2%",
-  },
-  { color: "indigo", label: "In Progress", count: "1,420", percent: "29.0%" },
-  {
-    color: "blue-pale",
-    label: "Attempted Contact",
-    count: "1,236",
-    percent: "25.3%",
-  },
-  { color: "mint", label: "New / Unreviewed", count: "342", percent: "7.0%" },
+const statuses: Array<{
+  key: DashboardLeadStatus;
+  color: string;
+  label: string;
+}> = [
+  { key: "NEW", color: "mint", label: "New" },
+  { key: "CONTACTED", color: "indigo", label: "Contacted" },
+  { key: "CLOSED", color: "emerald", label: "Closed" },
 ];
 
-export function StatusDistribution() {
+function periodLabel(range: DashboardRange): string {
+  return `Last ${range.slice(0, -1)} days`;
+}
+
+export function StatusDistribution({
+  counts,
+  range,
+}: {
+  counts: Record<DashboardLeadStatus, number>;
+  range: DashboardRange;
+}) {
+  const total = statuses.reduce((sum, status) => sum + counts[status.key], 0);
+  let stop = 0;
+  const stops = statuses.map((status) => {
+    const start = stop;
+    stop += total === 0 ? 0 : (counts[status.key] / total) * 100;
+    return `${status.color === "mint" ? "#62d7a8" : status.color === "indigo" ? "#5145e8" : "#007c56"} ${start}% ${stop}%`;
+  });
+  const background =
+    total === 0 ? "#edf0f7" : `conic-gradient(${stops.join(", ")})`;
+
   return (
     <section className="panel status-panel">
       <div className="panel-heading">
         <div>
-          <h2>Status Distribution</h2>
-          <p>Where your pipeline stands</p>
+          <h2>Lead Status Distribution</h2>
+          <p>{periodLabel(range)}</p>
         </div>
-        <button
-          className="icon-button small-icon"
-          type="button"
-          aria-label="More status options"
-        >
-          <MoreHorizontal size={20} />
-        </button>
       </div>
       <div className="donut-area">
-        <div className="donut" role="img" aria-label="Lead status distribution">
+        <div
+          className="donut"
+          style={{ background }}
+          role="img"
+          aria-label={statuses
+            .map((status) => `${status.label}: ${counts[status.key]}`)
+            .join(", ")}
+        >
           <div className="donut-center">
             <span>Total Leads</span>
-            <strong>4,892</strong>
-            <small>
-              <Check size={13} />
-              100% Synced
-            </small>
+            <strong>{total.toLocaleString("en-US")}</strong>
+            <small>{periodLabel(range)}</small>
           </div>
         </div>
       </div>
       <div className="status-legend">
-        {statuses.map(({ color, label, count, percent }) => (
-          <div className="status-row" key={label}>
-            <span>
-              <i className={`dot ${color}`} />
-              {label}
-            </span>
-            <strong>{count}</strong>
-            <b>{percent}</b>
-          </div>
-        ))}
+        {statuses.map((status) => {
+          const count = counts[status.key];
+          const percent = total === 0 ? 0 : Math.round((count / total) * 100);
+
+          return (
+            <div className="status-row" key={status.key}>
+              <span>
+                <i className={`dot ${status.color}`} />
+                {status.label}
+              </span>
+              <strong>{count.toLocaleString("en-US")}</strong>
+              <b>{percent}%</b>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

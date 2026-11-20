@@ -1,4 +1,3 @@
-
 "use client";
 
 import "./forms.css";
@@ -10,6 +9,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   Check,
@@ -28,73 +28,67 @@ import {
 
 import { Modal } from "@/components/ui/modal";
 
-import {
-  useDashboardNewAction,
-  useDashboardSearch,
-} from "@/components/layout/dashboard/dashboard-context";
+import { useDashboardSearch } from "@/components/layout/dashboard/dashboard-context";
 
 import { apiRequest, jsonBody } from "@/lib/http/client";
-import { getPageCount, getPageItems } from
-  "@/lib/utils/pagination";
+import { getPageCount, getPageItems } from "@/lib/utils/pagination";
 
-import {
-  toFormRecord,
-  type FormDTO,
-} from "./client/form-api";
+import { toFormRecord, type FormDTO } from "./client/form-api";
 
 import { FormCard } from "./components/form-card";
 import { FormMetric } from "./components/form-metric";
 
-import {
-  countFormStatuses,
-  filterAndSortForms,
-} from "./utils/forms";
+import { countFormStatuses, filterAndSortForms } from "./utils/forms";
 
 import type { FormRecord } from "./types/form.types";
 
-export function FormsPage() {
+export function FormsPage({
+  openCreateOnLoad = false,
+}: {
+  openCreateOnLoad?: boolean;
+}) {
+  const router = useRouter();
   const [forms, setForms] = useState<FormRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [busyFormId, setBusyFormId] = useState<string | null>(
-    null,
-  );
+  const [busyFormId, setBusyFormId] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("recent");
-  const [layout, setLayout] = useState<"grid" | "list">(
-    "grid",
-  );
+  const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [formName, setFormName] = useState("");
   const [notice, setNotice] = useState("");
-  const [openMenu, setOpenMenu] = useState<
-    string | number | null
-  >(null);
+  const [openMenu, setOpenMenu] = useState<string | number | null>(null);
 
   const dashboardSearch = useDashboardSearch();
 
   const openCreateForm = useCallback(() => {
     setCreateOpen(true);
   }, []);
-
-  useDashboardNewAction(openCreateForm);
+  const closeCreateForm = useCallback(() => {
+    setCreateOpen(false);
+    if (openCreateOnLoad) {
+      router.replace("/dashboard/forms", { scroll: false });
+    }
+  }, [openCreateOnLoad, router]);
 
   const loadForms = useCallback(async () => {
     try {
-      const records = await apiRequest<FormDTO[]>(
-        "/api/forms",
-      );
+      const records = await apiRequest<FormDTO[]>("/api/forms");
 
       setForms(records.map(toFormRecord));
+      setLoadError("");
     } catch (error) {
+      setLoadError(
+        error instanceof Error ? error.message : "Failed to load forms",
+      );
       setNotice(
-        error instanceof Error
-          ? error.message
-          : "Failed to load forms",
+        error instanceof Error ? error.message : "Failed to load forms",
       );
     } finally {
       setLoading(false);
@@ -108,14 +102,16 @@ export function FormsPage() {
       .then((records) => {
         if (active) {
           setForms(records.map(toFormRecord));
+          setLoadError("");
         }
       })
       .catch((error: unknown) => {
         if (active) {
+          setLoadError(
+            error instanceof Error ? error.message : "Failed to load forms",
+          );
           setNotice(
-            error instanceof Error
-              ? error.message
-              : "Failed to load forms",
+            error instanceof Error ? error.message : "Failed to load forms",
           );
         }
       })
@@ -135,22 +131,14 @@ export function FormsPage() {
       filterAndSortForms(forms, {
         query: `${query} ${dashboardSearch}`,
         status,
-        category: "all",
         sort,
       }),
     [forms, query, dashboardSearch, status, sort],
   );
 
   const pageSize = 6;
-  const pageCount = getPageCount(
-    filtered.length,
-    pageSize,
-  );
-  const visibleForms = getPageItems(
-    filtered,
-    page,
-    pageSize,
-  );
+  const pageCount = getPageCount(filtered.length, pageSize);
+  const visibleForms = getPageItems(filtered, page, pageSize);
 
   const {
     active: activeCount,
@@ -159,8 +147,7 @@ export function FormsPage() {
   } = countFormStatuses(forms);
 
   const totalSubmissions = forms.reduce(
-    (sum, form) =>
-      sum + Number(form.submissions.replaceAll(",", "")),
+    (sum, form) => sum + Number(form.submissions.replaceAll(",", "")),
     0,
   );
 
@@ -172,8 +159,7 @@ export function FormsPage() {
     if (!form.publicId) return;
 
     const endpoint =
-      `${window.location.origin}/v1/forms/` +
-      `${form.publicId}/submissions`;
+      `${window.location.origin}/v1/forms/` + `${form.publicId}/submissions`;
 
     try {
       await navigator.clipboard.writeText(endpoint);
@@ -183,9 +169,7 @@ export function FormsPage() {
     }
   }
 
-  async function createForm(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function createForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (busy) return;
@@ -202,7 +186,7 @@ export function FormsPage() {
       await loadForms();
 
       setFormName("");
-      setCreateOpen(false);
+      closeCreateForm();
       setPage(1);
       setStatus("all");
       setQuery("");
@@ -210,9 +194,7 @@ export function FormsPage() {
       showNotice("Form created as a draft");
     } catch (error) {
       showNotice(
-        error instanceof Error
-          ? error.message
-          : "Failed to create form",
+        error instanceof Error ? error.message : "Failed to create form",
       );
     } finally {
       setBusy(false);
@@ -226,10 +208,7 @@ export function FormsPage() {
     setBusyFormId(String(form.id));
 
     try {
-      await apiRequest(
-        `/api/forms/${form.id}`,
-        jsonBody("PATCH", changes),
-      );
+      await apiRequest(`/api/forms/${form.id}`, jsonBody("PATCH", changes));
 
       await loadForms();
       setOpenMenu(null);
@@ -237,9 +216,7 @@ export function FormsPage() {
       showNotice("Form updated");
     } catch (error) {
       showNotice(
-        error instanceof Error
-          ? error.message
-          : "Failed to update form",
+        error instanceof Error ? error.message : "Failed to update form",
       );
     } finally {
       setBusyFormId(null);
@@ -247,10 +224,7 @@ export function FormsPage() {
   }
 
   async function toggleStatus(form: FormRecord) {
-    const nextStatus =
-      form.status === "Active"
-        ? "ARCHIVED"
-        : "ACTIVE";
+    const nextStatus = form.status === "Active" ? "ARCHIVED" : "ACTIVE";
 
     await updateForm(form, {
       status: nextStatus,
@@ -258,10 +232,7 @@ export function FormsPage() {
   }
 
   async function renameForm(form: FormRecord) {
-    const name = window.prompt(
-      "Rename form",
-      form.title,
-    );
+    const name = window.prompt("Rename form", form.title);
 
     if (name === null) return;
 
@@ -275,9 +246,7 @@ export function FormsPage() {
   }
 
   async function configureOrigins(form: FormRecord) {
-    const current = (form.allowedOrigins ?? []).join(
-      "\n",
-    );
+    const current = (form.allowedOrigins ?? []).join("\n");
 
     const answer = window.prompt(
       "Allowed website origins (one per line)",
@@ -313,8 +282,7 @@ export function FormsPage() {
           </div>
 
           <p>
-            Create and manage API forms for your
-            website&apos;s lead collection.
+            Create and manage API forms for your website&apos;s lead collection.
           </p>
         </div>
 
@@ -371,8 +339,8 @@ export function FormsPage() {
           <div>
             <h2>Connect your existing website form</h2>
             <p>
-              Create a form, publish it, and copy its unique
-              submission endpoint to your website.
+              Create a form, publish it, and copy its unique submission endpoint
+              to your website.
             </p>
           </div>
         </div>
@@ -404,15 +372,9 @@ export function FormsPage() {
               aria-label="Filter forms by status"
             >
               <option value="all">All Statuses</option>
-              <option value="active">
-                Active ({activeCount})
-              </option>
-              <option value="draft">
-                Draft ({draftCount})
-              </option>
-              <option value="archived">
-                Archived ({archivedCount})
-              </option>
+              <option value="active">Active ({activeCount})</option>
+              <option value="draft">Draft ({draftCount})</option>
+              <option value="archived">Archived ({archivedCount})</option>
             </select>
             <ChevronDown size={15} />
           </label>
@@ -430,9 +392,7 @@ export function FormsPage() {
             >
               <option value="recent">Recently created</option>
               <option value="name">Name A-Z</option>
-              <option value="submissions">
-                Most submissions
-              </option>
+              <option value="submissions">Most submissions</option>
             </select>
 
             <List size={16} />
@@ -470,44 +430,51 @@ export function FormsPage() {
         </p>
       )}
 
-      {!loading && filtered.length === 0 && (
-        <p className="p-6 text-sm text-[#55586c]">
-          No forms match your filters.
+      {!loading && loadError && (
+        <p className="p-6 text-sm text-red-700" role="alert">
+          Forms could not be loaded: {loadError}
         </p>
       )}
 
-      <section
-        className={`forms-grid-list ${layout}`}
-        aria-label="Your forms"
-      >
+      {!loading && !loadError && filtered.length === 0 && (
+        <div className="form-empty-state">
+          <p>
+            {forms.length === 0
+              ? "You haven’t created any forms yet."
+              : "No forms match your filters."}
+          </p>
+          {forms.length === 0 && (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={openCreateForm}
+            >
+              <Plus size={17} />
+              Create your first form
+            </button>
+          )}
+        </div>
+      )}
+
+      <section className={`forms-grid-list ${layout}`} aria-label="Your forms">
         {visibleForms.map((form) => (
           <FormCard
             key={form.id}
             form={form}
             busy={busyFormId === String(form.id)}
             menuOpen={openMenu === form.id}
-            onMenu={() =>
-              setOpenMenu(
-                openMenu === form.id
-                  ? null
-                  : form.id,
-              )
-            }
+            onMenu={() => setOpenMenu(openMenu === form.id ? null : form.id)}
             onToggle={() => void toggleStatus(form)}
             onCopy={() => void copyEndpoint(form)}
             onRename={() => void renameForm(form)}
-            onConfigure={() =>
-              void configureOrigins(form)
-            }
+            onConfigure={() => void configureOrigins(form)}
           />
         ))}
       </section>
 
       <footer className="forms-footer">
         <div>
-          Showing{" "}
-          <strong>{visibleForms.length}</strong>
-          {" "}of{" "}
+          Showing <strong>{visibleForms.length}</strong> of{" "}
           <strong>{filtered.length}</strong> forms
         </div>
 
@@ -515,24 +482,20 @@ export function FormsPage() {
           <button
             type="button"
             disabled={page <= 1}
-            onClick={() =>
-              setPage((value) => Math.max(1, value - 1))
-            }
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
           >
             <ChevronLeft size={15} />
             Previous
           </button>
 
-          <span>{page} / {pageCount}</span>
+          <span>
+            {page} / {pageCount}
+          </span>
 
           <button
             type="button"
             disabled={page >= pageCount}
-            onClick={() =>
-              setPage((value) =>
-                Math.min(pageCount, value + 1),
-              )
-            }
+            onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
           >
             Next
             <ChevronRight size={15} />
@@ -555,12 +518,12 @@ export function FormsPage() {
         </div>
       )}
 
-      {createOpen && (
+      {(createOpen || openCreateOnLoad) && (
         <Modal
           id="create-form-title"
           title="Create a form"
           description="Give your form a name. Every form receives its own public ID."
-          onClose={() => setCreateOpen(false)}
+          onClose={closeCreateForm}
         >
           <form onSubmit={createForm}>
             <label className="form-name-field">
@@ -571,9 +534,7 @@ export function FormsPage() {
                 minLength={2}
                 maxLength={120}
                 value={formName}
-                onChange={(event) =>
-                  setFormName(event.target.value)
-                }
+                onChange={(event) => setFormName(event.target.value)}
                 placeholder="Contact Form"
               />
             </label>
@@ -582,16 +543,12 @@ export function FormsPage() {
               <button
                 type="button"
                 className="secondary-button"
-                onClick={() => setCreateOpen(false)}
+                onClick={closeCreateForm}
               >
                 Cancel
               </button>
 
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={busy}
-              >
+              <button type="submit" className="primary-button" disabled={busy}>
                 <Plus size={16} />
                 {busy ? "Creating..." : "Create draft"}
               </button>

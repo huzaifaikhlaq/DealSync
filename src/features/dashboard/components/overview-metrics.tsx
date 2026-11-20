@@ -1,82 +1,88 @@
-import { Bolt, ShieldCheck, Trophy, Users } from "lucide-react";
+import {
+  CheckCircle2,
+  ClipboardList,
+  Phone,
+  UserPlus,
+  Users,
+} from "lucide-react";
 
-type MetricCardProps = {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  change: string;
-  note: string;
-  progress: string;
-  tone?: "indigo" | "blue" | "purple" | "green";
-};
+import type { DashboardMetrics, DashboardRange } from "../types/dashboard";
 
-function MetricCard({
-  icon,
-  label,
-  value,
-  change,
-  note,
-  progress,
-  tone = "indigo",
-}: MetricCardProps) {
-  return (
-    <article className="metric-card">
-      <div className="metric-top">
-        <span>{label}</span>
-        <div className={`metric-icon ${tone}`}>{icon}</div>
-      </div>
-      <div className="metric-value">
-        <strong>{value}</strong>
-        <span>
-          <span aria-hidden="true">↑</span> {change}
-        </span>
-      </div>
-      <p>{note}</p>
-      <div className="progress-track">
-        <i className={`${tone}-fill`} style={{ width: progress }} />
-      </div>
-    </article>
-  );
+const numberFormatter = new Intl.NumberFormat("en-US");
+
+function periodLabel(range: DashboardRange): string {
+  return `in the last ${range.slice(0, -1)} days`;
 }
 
-export function OverviewMetrics() {
+export function OverviewMetrics({
+  metrics,
+  range,
+}: {
+  metrics: DashboardMetrics;
+  range: DashboardRange;
+}) {
+  const cards = [
+    {
+      icon: <ClipboardList size={20} />,
+      label: "Total Forms",
+      value: metrics.totalForms,
+      note: "All forms in your account",
+      tone: "indigo",
+    },
+    {
+      icon: <CheckCircle2 size={20} />,
+      label: "Active Forms",
+      value: metrics.activeForms,
+      note: "Forms accepting submissions",
+      tone: "green",
+    },
+    {
+      icon: <Users size={20} />,
+      label: "Total Leads",
+      value: metrics.totalLeads,
+      note: periodLabel(range),
+      tone: "purple",
+    },
+    {
+      icon: <UserPlus size={20} />,
+      label: "New Leads",
+      value: metrics.newLeads,
+      note: periodLabel(range),
+      tone: "blue",
+    },
+    {
+      icon: <Phone size={20} />,
+      label: "Contacted Leads",
+      value: metrics.contactedLeads,
+      note: periodLabel(range),
+      tone: "indigo",
+    },
+    {
+      icon: <CheckCircle2 size={20} />,
+      label: "Closed Leads",
+      value: metrics.closedLeads,
+      note: periodLabel(range),
+      tone: "green",
+    },
+  ] as const;
+
   return (
-    <section className="metric-grid" aria-label="Lead metrics">
-      <MetricCard
-        icon={<Users size={20} />}
-        label="Total Captured Leads"
-        value="4,892"
-        change="18.4%"
-        note="Total captured through 8 active forms"
-        progress="78%"
-      />
-      <MetricCard
-        icon={<Bolt size={20} />}
-        label="New Leads"
-        value="342"
-        change="12.1%"
-        note="Unreviewed in the last 48 hours"
-        progress="42%"
-        tone="blue"
-      />
-      <MetricCard
-        icon={<ShieldCheck size={20} />}
-        label="Qualified Leads"
-        value="1,280"
-        change="24.8%"
-        note="Score ≥ 75 or high buyer intent"
-        progress="64%"
-        tone="purple"
-      />
-      <MetricCard
-        icon={<Trophy size={20} />}
-        label="Converted Leads"
-        value="614"
-        change="12.5%"
-        note="$284,500 pipeline ARR value"
-        progress="55%"
-        tone="green"
-      />
+    <section
+      className="metric-grid overview-metrics-grid"
+      aria-label="Dashboard metrics"
+    >
+      {cards.map((card) => (
+        <article className="metric-card" key={card.label}>
+          <div className="metric-top">
+            <span>{card.label}</span>
+            <div className={`metric-icon ${card.tone}`}>{card.icon}</div>
+          </div>
+          <div className="metric-value">
+            <strong>{numberFormatter.format(card.value)}</strong>
+          </div>
+          <p>{card.note}</p>
+        </article>
+      ))}
     </section>
   );
 }

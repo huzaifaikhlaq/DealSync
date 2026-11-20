@@ -4,8 +4,15 @@ import { useState, type ReactNode } from "react";
 import { DashboardProvider } from "./dashboard-context";
 import { DashboardSidebar } from "./dashboard-sidebar";
 import { DashboardTopbar } from "./dashboard-topbar";
+import type { AuthUser } from "@/features/auth/types/auth.types";
 
-export function DashboardShell({ children }: { children: ReactNode }) {
+export function DashboardShell({
+  children,
+  user,
+}: {
+  children: ReactNode;
+  user: Pick<AuthUser, "name" | "email">;
+}) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
@@ -14,9 +21,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <DashboardSidebar
           isMobileOpen={mobileNavOpen}
           onClose={() => setMobileNavOpen(false)}
+          user={user}
         />
         <div className="dash-main">
-          <DashboardTopbar onOpenMobileNav={() => setMobileNavOpen(true)} />
+          <DashboardTopbar
+            onOpenMobileNav={() => setMobileNavOpen(true)}
+            user={user}
+          />
           <main className="dash-content">{children}</main>
         </div>
         {mobileNavOpen && (

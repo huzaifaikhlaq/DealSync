@@ -1,4 +1,5 @@
 import type { Lead } from "../types/lead.types";
+import { extractContactDetails } from "../utils/contact-data";
 
 export type LeadDTO = {
   id: string;
@@ -21,18 +22,9 @@ export type LeadListDTO = {
   totalPages: number;
 };
 
-function getField(data: Record<string, unknown>, key: string): string {
-  const value = data[key];
-
-  if (typeof value === "string" || typeof value === "number") {
-    return String(value);
-  }
-
-  return "";
-}
-
 export function toLeadRecord(item: LeadDTO): Lead {
-  const name = getField(item.data, "name") || "Unknown visitor";
+  const contact = extractContactDetails(item.data);
+  const name = contact.name;
 
   const statuses = {
     NEW: "New",
@@ -43,11 +35,11 @@ export function toLeadRecord(item: LeadDTO): Lead {
   return {
     id: item.id,
     name,
-    email: getField(item.data, "email"),
-    role: getField(item.data, "role") || "Website visitor",
-    company: getField(item.data, "company") || "—",
-    domain: getField(item.data, "domain"),
-    phone: getField(item.data, "phone") || "—",
+    email: contact.email,
+    role: contact.role || "Website visitor",
+    company: contact.company || "—",
+    domain: contact.domain,
+    phone: contact.phone || "—",
     form: item.form.name,
     formId: item.form.id,
     status: statuses[item.status],

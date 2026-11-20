@@ -7,6 +7,11 @@ type Context = {
   params: Promise<{ leadId: string }>;
 };
 
+export async function GET(_request: NextRequest, context: Context) {
+  const { leadId } = await context.params;
+  return leadController.get(leadId);
+}
+
 export async function PATCH(request: NextRequest, context: Context) {
   const { leadId } = await context.params;
 

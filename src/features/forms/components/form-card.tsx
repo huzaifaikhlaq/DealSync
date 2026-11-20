@@ -1,4 +1,3 @@
-
 import {
   Code2,
   Copy,
@@ -44,13 +43,15 @@ export function FormCard({
 
   return (
     <article
-      className={`form-list-card ${archived ? "archived-form" : ""
-        } ${draft ? "draft-form" : ""}`}
+      className={`form-list-card ${
+        archived ? "archived-form" : ""
+      } ${draft ? "draft-form" : ""}`}
     >
       <div className="form-card-meta">
         <span
-          className={`form-status ${active ? "active" : draft ? "draft" : "archived"
-            }`}
+          className={`form-status ${
+            active ? "active" : draft ? "draft" : "archived"
+          }`}
         >
           <i />
           {form.status}
@@ -71,32 +72,19 @@ export function FormCard({
 
           {menuOpen && (
             <div className="form-menu">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onToggle}
-              >
+              <button type="button" disabled={busy} onClick={onToggle}>
                 {actionLabel}
               </button>
 
-              <button
-                type="button"
-                onClick={onCopy}
-              >
+              <button type="button" onClick={onCopy}>
                 Copy endpoint
               </button>
 
-              <button
-                type="button"
-                onClick={onRename}
-              >
+              <button type="button" onClick={onRename}>
                 Rename form
               </button>
 
-              <button
-                type="button"
-                onClick={onConfigure}
-              >
+              <button type="button" onClick={onConfigure}>
                 Allowed origins
               </button>
             </div>
@@ -106,15 +94,9 @@ export function FormCard({
 
       <h2>{form.title}</h2>
 
-      <button
-        type="button"
-        className="form-url"
-        onClick={onCopy}
-      >
+      <button type="button" className="form-url" onClick={onCopy}>
         <Link2 size={16} />
-        <span>
-          /v1/forms/{form.publicId}/submissions
-        </span>
+        <span>/v1/forms/{form.publicId}/submissions</span>
         <Copy size={15} />
       </button>
 
@@ -122,45 +104,22 @@ export function FormCard({
         <div>
           <span>Submissions</span>
           <strong>{form.submissions}</strong>
-          <small>{form.last}</small>
+          <small>All time</small>
         </div>
-
-        <div>
-          <span>Conversion</span>
-          <strong>—</strong>
-          <div className="form-rate-track">
-            <i style={{ width: "0%" }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="form-tags">
-        {form.tags.map((tag) => (
-          <span key={tag}>{tag}</span>
-        ))}
       </div>
 
       <div className="form-card-actions">
-        <button
-          type="button"
-          onClick={onCopy}
-        >
+        <button type="button" onClick={onCopy}>
           <Code2 size={15} />
           Copy API Endpoint
         </button>
 
-        <button
-          type="button"
-          onClick={onRename}
-        >
+        <button type="button" onClick={onRename}>
           <FilePenLine size={15} />
           Rename
         </button>
 
-        <button
-          type="button"
-          onClick={onConfigure}
-        >
+        <button type="button" onClick={onConfigure}>
           <Settings2 size={15} />
           Origins
         </button>

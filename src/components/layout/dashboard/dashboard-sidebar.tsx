@@ -2,18 +2,28 @@
 
 import { Sparkles, X } from "lucide-react";
 import { LogoutButton } from "@/features/auth/components/logout-button";
+import type { AuthUser } from "@/features/auth/types/auth.types";
 import { DashboardNavigation } from "./dashboard-navigation";
-import { WorkspaceSwitcher } from "./workspace-switcher";
 
 type DashboardSidebarProps = {
   isMobileOpen: boolean;
   onClose: () => void;
+  user: Pick<AuthUser, "name" | "email">;
 };
 
 export function DashboardSidebar({
   isMobileOpen,
   onClose,
+  user,
 }: DashboardSidebarProps) {
+  const initials = user.name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .toUpperCase();
+
   return (
     <aside
       className={`dash-sidebar ${isMobileOpen ? "dash-sidebar-open" : ""}`}
@@ -34,14 +44,13 @@ export function DashboardSidebar({
           <X size={18} />
         </button>
       </div>
-      <WorkspaceSwitcher />
       <DashboardNavigation onNavigate={onClose} />
       <div className="sidebar-bottom">
         <div className="sidebar-profile">
-          <div className="avatar avatar-photo">MV</div>
+          <div className="avatar lilac">{initials}</div>
           <span>
-            <strong>Marcus Vance</strong>
-            <small>Company Admin</small>
+            <strong>{user.name}</strong>
+            <small>{user.email}</small>
           </span>
         </div>
         <LogoutButton />

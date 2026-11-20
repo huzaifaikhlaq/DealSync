@@ -1,118 +1,151 @@
-import { ArrowRight, FileText, Filter } from "lucide-react";
-import { dashboardLeads } from "../data/overview-data";
+import Link from "next/link";
+import { ArrowRight, FileText } from "lucide-react";
+
+import type { DashboardRange, DashboardRecentLead } from "../types/dashboard";
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "UTC",
+});
 
 export function RecentLeads({
+  leads,
   query,
-  onAction,
+  range,
 }: {
+  leads: DashboardRecentLead[];
   query: string;
-  onAction: (message: string) => void;
+  range: DashboardRange;
 }) {
-  const leads = dashboardLeads.filter((lead) =>
-    `${lead.name} ${lead.company} ${lead.form} ${lead.status}`
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleLeads = leads.filter((lead) =>
+    [
+      lead.name,
+      lead.email,
+      lead.phone,
+      lead.company,
+      lead.role,
+      lead.domain,
+      lead.formName,
+      lead.status,
+    ]
+      .join(" ")
       .toLowerCase()
-      .includes(query.toLowerCase()),
+      .includes(normalizedQuery),
   );
 
   return (
     <section className="panel leads-panel">
       <div className="panel-heading">
         <div>
-          <h2>Recent Incoming Leads</h2>
-          <p>Real-time incoming submissions enriched with firmographics</p>
+          <h2>Recent Leads</h2>
+          <p>
+            Latest submissions from your forms in the last {range.slice(0, -1)}{" "}
+            days.
+          </p>
         </div>
-        <div className="lead-tools">
-          <button
-            className="icon-button small-icon"
-            type="button"
-            aria-label="Filter leads"
-            onClick={() => onAction("Use the search field to filter leads")}
-          >
-            <Filter size={17} />
-          </button>
-          <button
-            className="text-link"
-            type="button"
-            onClick={() => onAction("Opening all leads")}
-          >
-            View all (4,892)
-          </button>
-        </div>
+        <Link className="text-link" href="/dashboard/leads">
+          View all leads <ArrowRight size={16} />
+        </Link>
       </div>
-      <div className="table-scroll">
-        <table className="leads-table">
-          <thead>
-            <tr>
-              <th>Lead Contact</th>
-              <th>Source Form</th>
-              <th>Score</th>
-              <th>Status</th>
-              <th>Timestamp</th>
-              <th>
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {leads.map((lead) => (
-              <tr key={lead.name}>
-                <td>
-                  <div className="lead-person">
-                    <div className={`avatar ${lead.color}`}>
-                      {lead.initials}
-                    </div>
-                    <span>
-                      <strong>{lead.name}</strong>
-                      <small>
-                        {lead.role}, {lead.company}
-                      </small>
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <span className="form-source">
-                    <FileText size={14} />
-                    {lead.form}
-                  </span>
-                </td>
-                <td>
-                  <span
-                    className={`score ${lead.score >= 85 ? "high-score" : ""}`}
-                  >
-                    {lead.score}
-                  </span>
-                </td>
-                <td>
-                  <span
-                    className={`status-chip ${lead.status.toLowerCase().replaceAll(" ", "-")}`}
-                  >
-                    <i />
-                    {lead.status}
-                  </span>
-                </td>
-                <td className="timestamp">{lead.time}</td>
-                <td>
-                  <button
-                    className="row-action"
-                    type="button"
-                    aria-label={`Open ${lead.name}`}
-                    onClick={() => onAction(`Lead profile: ${lead.name}`)}
-                  >
-                    <ArrowRight size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {leads.length === 0 && (
+      {visibleLeads.length === 0 ? (
+        <div className="dashboard-empty-state">
+          <p>
+            {leads.length === 0
+              ? "No submissions in this period."
+              : `No recent leads match “${query}”.`}
+          </p>
+          {leads.length === 0 && (
+            <Link className="text-link" href="/dashboard/forms">
+              Manage forms <ArrowRight size={16} />
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div
+          className="table-scroll"
+          role="region"
+          aria-label="Recent submissions"
+          tabIndex={0}
+        >
+          <table className="leads-table">
+            <caption className="sr-only">Recent lead submissions</caption>
+            <thead>
               <tr>
-                <td colSpan={6} className="empty-row">
-                  No leads match “{query}”.
-                </td>
+                <th scope="col">Lead Contact</th>
+                <th scope="col">Source Form</th>
+                <th scope="col">Status</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {visibleLeads.map((lead, index) => {
+                const initials = lead.name
+                  .split(/\s+/)
+                  .slice(0, 2)
+                  .map((part) => part[0] ?? "")
+                  .join("")
+                  .toUpperCase();
+                const contactDetail =
+                  lead.email && lead.email !== lead.name
+                    ? lead.email
+                    : lead.phone && lead.phone !== lead.name
+                      ? lead.phone
+                      : lead.company || "Contact details not provided";
+                const avatarColor = ["lilac", "blue", "peach"][index % 3];
+
+                return (
+                  <tr key={lead.id}>
+                    <td>
+                      <div className="lead-person">
+                        <div className={`avatar ${avatarColor}`}>
+                          {initials}
+                        </div>
+                        <span>
+                          <strong>{lead.name}</strong>
+                          <small>{contactDetail}</small>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="form-source">
+                        <FileText size={14} aria-hidden="true" />
+                        {lead.formName}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`status-chip ${lead.status.toLowerCase()}`}
+                      >
+                        <i />
+                        {lead.status[0] + lead.status.slice(1).toLowerCase()}
+                      </span>
+                    </td>
+                    <td className="timestamp">
+                      <time dateTime={lead.createdAt}>
+                        {dateFormatter.format(new Date(lead.createdAt))} UTC
+                      </time>
+                    </td>
+                    <td>
+                      <Link
+                        className="row-action"
+                        href={`/dashboard/leads?leadId=${encodeURIComponent(lead.id)}`}
+                        aria-label={`View ${lead.name}`}
+                      >
+                        <ArrowRight size={16} />
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

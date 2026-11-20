@@ -1,13 +1,8 @@
-
 "use client";
 
 import "./leads.css";
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -29,20 +24,16 @@ import {
 
 import { Modal } from "@/components/ui/modal";
 
-import {
-  useDashboardNewAction,
-  useDashboardSearch,
-} from "@/components/layout/dashboard/dashboard-context";
+import { useDashboardSearch } from "@/components/layout/dashboard/dashboard-context";
 
-import { apiRequest, jsonBody } from
-  "@/lib/http/client";
+import { apiRequest, jsonBody } from "@/lib/http/client";
 
 import type { Lead } from "./types/lead.types";
-import type { FormDTO } from
-  "@/features/forms/client/form-api";
+import type { FormDTO } from "@/features/forms/client/form-api";
 
 import {
   toLeadRecord,
+  type LeadDTO,
   type LeadListDTO,
 } from "./client/lead-api";
 
@@ -54,24 +45,15 @@ import {
 
 import { createLeadsCsv } from "./utils/leads";
 
-type LeadStatusValue =
-  | "NEW"
-  | "CONTACTED"
-  | "CLOSED";
+type LeadStatusValue = "NEW" | "CONTACTED" | "CLOSED";
 
-type LeadRange =
-  | "7d"
-  | "30d"
-  | "90d"
-  | "all";
+type LeadRange = "7d" | "30d" | "90d" | "all";
 
-export function LeadsPage() {
+export function LeadsPage({ initialLeadId }: { initialLeadId?: string }) {
   const router = useRouter();
 
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [availableForms, setAvailableForms] = useState<
-    FormDTO[]
-  >([]);
+  const [availableForms, setAvailableForms] = useState<FormDTO[]>([]);
 
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -83,28 +65,27 @@ export function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [range, setRange] = useState<LeadRange>("30d");
 
-  const [view, setView] = useState<
-    "table" | "compact" | "cards"
-  >("table");
+  const [view, setView] = useState<"table" | "compact" | "cards">("table");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
-  const [selected, setSelected] = useState<
-    Array<string | number>
-  >([]);
+  const [selected, setSelected] = useState<Array<string | number>>([]);
 
-  const [openedLead, setOpenedLead] = useState<Lead | null>(
-    null,
-  );
+  const [openedLead, setOpenedLead] = useState<Lead | null>(null);
 
   const dashboardSearch = useDashboardSearch();
 
   const navigateToForms = useCallback(() => {
-    router.push("/dashboard/forms");
+    router.push("/dashboard/forms?create=1");
   }, [router]);
 
-  useDashboardNewAction(navigateToForms);
+  const closeLeadDetails = useCallback(() => {
+    setOpenedLead(null);
+    if (initialLeadId) {
+      router.replace("/dashboard/leads", { scroll: false });
+    }
+  }, [initialLeadId, router]);
 
   useEffect(() => {
     let active = true;
@@ -116,9 +97,7 @@ export function LeadsPage() {
       .catch((error: unknown) => {
         if (active) {
           setNotice(
-            error instanceof Error
-              ? error.message
-              : "Unable to load forms",
+            error instanceof Error ? error.message : "Unable to load forms",
           );
         }
       });
@@ -127,6 +106,28 @@ export function LeadsPage() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!initialLeadId) return;
+
+    let active = true;
+
+    apiRequest<LeadDTO>(`/api/leads/${encodeURIComponent(initialLeadId)}`)
+      .then((lead) => {
+        if (active) setOpenedLead(toLeadRecord(lead));
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setNotice(
+            error instanceof Error ? error.message : "Unable to open this lead",
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [initialLeadId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -149,9 +150,7 @@ export function LeadsPage() {
           params.set("status", statusFilter);
         }
 
-        const search = `${query} ${dashboardSearch}`
-          .trim()
-          .slice(0, 100);
+        const search = `${query} ${dashboardSearch}`.trim().slice(0, 100);
 
         if (search) {
           params.set("q", search);
@@ -175,9 +174,7 @@ export function LeadsPage() {
 
         setLoading(false);
         setNotice(
-          error instanceof Error
-            ? error.message
-            : "Unable to load leads",
+          error instanceof Error ? error.message : "Unable to load leads",
         );
       }
     }, 250);
@@ -199,43 +196,25 @@ export function LeadsPage() {
 
   const pageLeads = leads;
 
-  const pageCount = Math.max(
-    1,
-    Math.ceil(total / pageSize),
-  );
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
-  const firstVisible =
-    total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const firstVisible = total === 0 ? 0 : (page - 1) * pageSize + 1;
 
-  const lastVisible =
-    total === 0
-      ? 0
-      : firstVisible + pageLeads.length - 1;
+  const lastVisible = total === 0 ? 0 : firstVisible + pageLeads.length - 1;
 
   const allOnPageSelected =
     pageLeads.length > 0 &&
-    pageLeads.every((lead) =>
-      selected.includes(lead.id),
-    );
+    pageLeads.every((lead) => selected.includes(lead.id));
 
   const pageMetrics = {
-    new: leads.filter(
-      (lead) => lead.status === "New",
-    ).length,
+    new: leads.filter((lead) => lead.status === "New").length,
 
-    contacted: leads.filter(
-      (lead) => lead.status === "Contacted",
-    ).length,
+    contacted: leads.filter((lead) => lead.status === "Contacted").length,
 
-    closed: leads.filter(
-      (lead) => lead.status === "Closed",
-    ).length,
+    closed: leads.filter((lead) => lead.status === "Closed").length,
   };
 
-  function setFilter(
-    setter: (value: string) => void,
-    value: string,
-  ) {
+  function setFilter(setter: (value: string) => void, value: string) {
     setter(value);
     setPage(1);
   }
@@ -275,9 +254,7 @@ export function LeadsPage() {
 
     URL.revokeObjectURL(url);
 
-    setNotice(
-      `Exported ${leads.length} leads from the current page`,
-    );
+    setNotice(`Exported ${leads.length} leads from the current page`);
   }
 
   async function updateLead(
@@ -288,27 +265,19 @@ export function LeadsPage() {
     },
   ) {
     try {
-      await apiRequest(
-        `/api/leads/${leadId}`,
-        jsonBody("PATCH", changes),
-      );
+      await apiRequest(`/api/leads/${leadId}`, jsonBody("PATCH", changes));
 
       setRefreshVersion((value) => value + 1);
       setNotice("Lead updated successfully");
     } catch (error) {
       setNotice(
-        error instanceof Error
-          ? error.message
-          : "Unable to update lead",
+        error instanceof Error ? error.message : "Unable to update lead",
       );
     }
   }
 
   async function addNote(lead: Lead) {
-    const notes = window.prompt(
-      `Notes for ${lead.name}`,
-      lead.notes ?? "",
-    );
+    const notes = window.prompt(`Notes for ${lead.name}`, lead.notes ?? "");
 
     if (notes === null) return;
 
@@ -348,15 +317,10 @@ export function LeadsPage() {
         <div>
           <div className="leads-title">
             <h1>Leads</h1>
-            <span className="sync-tag">
-              <i />
-              Live Data
-            </span>
           </div>
 
           <p>
-            Track and manage visitor submissions
-            across all your website forms.
+            Track and manage visitor submissions across all your website forms.
           </p>
         </div>
 
@@ -427,9 +391,7 @@ export function LeadsPage() {
               aria-label="Search leads"
               placeholder="Search by name or email..."
               value={query}
-              onChange={(event) =>
-                setFilter(setQuery, event.target.value)
-              }
+              onChange={(event) => setFilter(setQuery, event.target.value)}
             />
           </label>
 
@@ -437,20 +399,12 @@ export function LeadsPage() {
             <select
               aria-label="Filter by form"
               value={formFilter}
-              onChange={(event) =>
-                setFilter(
-                  setFormFilter,
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setFilter(setFormFilter, event.target.value)}
             >
               <option value="all">All Forms</option>
 
               {availableForms.map((form) => (
-                <option
-                  key={form.id}
-                  value={form.id}
-                >
+                <option key={form.id} value={form.id}>
                   {form.name}
                 </option>
               ))}
@@ -464,10 +418,7 @@ export function LeadsPage() {
               aria-label="Filter by status"
               value={statusFilter}
               onChange={(event) =>
-                setFilter(
-                  setStatusFilter,
-                  event.target.value,
-                )
+                setFilter(setStatusFilter, event.target.value)
               }
             >
               <option value="all">All Statuses</option>
@@ -486,9 +437,7 @@ export function LeadsPage() {
               aria-label="Filter by date"
               value={range}
               onChange={(event) => {
-                setRange(
-                  event.target.value as LeadRange,
-                );
+                setRange(event.target.value as LeadRange);
                 setPage(1);
               }}
             >
@@ -520,9 +469,7 @@ export function LeadsPage() {
             <button
               type="button"
               aria-label="Comfortable table"
-              className={
-                view === "table" ? "active" : ""
-              }
+              className={view === "table" ? "active" : ""}
               onClick={() => setView("table")}
             >
               <ListIcon />
@@ -531,9 +478,7 @@ export function LeadsPage() {
             <button
               type="button"
               aria-label="Compact table"
-              className={
-                view === "compact" ? "active" : ""
-              }
+              className={view === "compact" ? "active" : ""}
               onClick={() => setView("compact")}
             >
               <RowsIcon />
@@ -542,9 +487,7 @@ export function LeadsPage() {
             <button
               type="button"
               aria-label="Card view"
-              className={
-                view === "cards" ? "active" : ""
-              }
+              className={view === "cards" ? "active" : ""}
               onClick={() => setView("cards")}
             >
               <ColumnsIcon />
@@ -573,10 +516,9 @@ export function LeadsPage() {
         </section>
       ) : (
         <section
-          className={`panel leads-table-panel ${view === "compact"
-              ? "compact-view"
-              : ""
-            }`}
+          className={`panel leads-table-panel ${
+            view === "compact" ? "compact-view" : ""
+          }`}
         >
           <div className="lead-table-scroll">
             <table className="full-leads-table">
@@ -590,9 +532,7 @@ export function LeadsPage() {
                       onChange={(event) =>
                         setSelected(
                           event.target.checked
-                            ? pageLeads.map(
-                              (lead) => lead.id,
-                            )
+                            ? pageLeads.map((lead) => lead.id)
                             : [],
                         )
                       }
@@ -606,9 +546,7 @@ export function LeadsPage() {
                   <th>Lead Status</th>
                   <th>Submitted Date</th>
                   <th>
-                    <span className="sr-only">
-                      Actions
-                    </span>
+                    <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>
@@ -620,39 +558,27 @@ export function LeadsPage() {
                       <input
                         type="checkbox"
                         aria-label={`Select ${lead.name}`}
-                        checked={selected.includes(
-                          lead.id,
-                        )}
-                        onChange={() =>
-                          toggleLead(lead.id)
-                        }
+                        checked={selected.includes(lead.id)}
+                        onChange={() => toggleLead(lead.id)}
                       />
                     </td>
 
                     <td>
                       <div className="full-lead-person">
-                        <div
-                          className={`avatar lead-avatar ${lead.color}`}
-                        >
+                        <div className={`avatar lead-avatar ${lead.color}`}>
                           {lead.initials}
                         </div>
 
                         <span>
                           <strong>
                             {lead.name}
-                            {lead.verified && (
-                              <ShieldCheck size={15} />
-                            )}
+                            {lead.verified && <ShieldCheck size={15} />}
                           </strong>
 
                           <small>{lead.role}</small>
 
                           {lead.email && (
-                            <a
-                              href={`mailto:${lead.email}`}
-                            >
-                              {lead.email}
-                            </a>
+                            <a href={`mailto:${lead.email}`}>{lead.email}</a>
                           )}
                         </span>
                       </div>
@@ -660,19 +586,13 @@ export function LeadsPage() {
 
                     <td>
                       <div className="company-cell">
-                        <strong>
-                          {lead.company}
-                        </strong>
+                        <strong>{lead.company}</strong>
 
-                        <small>
-                          {lead.domain}
-                        </small>
+                        <small>{lead.domain}</small>
                       </div>
                     </td>
 
-                    <td className="lead-phone">
-                      {lead.phone}
-                    </td>
+                    <td className="lead-phone">{lead.phone}</td>
 
                     <td>
                       <span className="source-pill">
@@ -682,24 +602,18 @@ export function LeadsPage() {
                     </td>
 
                     <td>
-                      <StatusBadge
-                        status={lead.status}
-                      />
+                      <StatusBadge status={lead.status} />
                       {renderStatusSelect(lead)}
                     </td>
 
-                    <td className="submitted-cell">
-                      {lead.submitted}
-                    </td>
+                    <td className="submitted-cell">{lead.submitted}</td>
 
                     <td>
                       <div className="table-actions">
                         <button
                           type="button"
                           aria-label={`View ${lead.name}`}
-                          onClick={() =>
-                            setOpenedLead(lead)
-                          }
+                          onClick={() => setOpenedLead(lead)}
                         >
                           <Eye size={17} />
                         </button>
@@ -707,9 +621,7 @@ export function LeadsPage() {
                         <button
                           type="button"
                           aria-label={`Edit notes for ${lead.name}`}
-                          onClick={() =>
-                            void addNote(lead)
-                          }
+                          onClick={() => void addNote(lead)}
                         >
                           <FilePlus2 size={17} />
                         </button>
@@ -718,23 +630,16 @@ export function LeadsPage() {
                   </tr>
                 ))}
 
-                {!loading &&
-                  pageLeads.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="no-leads"
-                      >
-                        No leads match these filters.{" "}
-                        <button
-                          type="button"
-                          onClick={resetFilters}
-                        >
-                          Clear filters
-                        </button>
-                      </td>
-                    </tr>
-                  )}
+                {!loading && pageLeads.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="no-leads">
+                      No leads match these filters.{" "}
+                      <button type="button" onClick={resetFilters}>
+                        Clear filters
+                      </button>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -745,15 +650,9 @@ export function LeadsPage() {
               <strong>
                 {firstVisible}–{lastVisible}
               </strong>{" "}
-              of{" "}
-              <strong>
-                {total.toLocaleString()}
-              </strong>{" "}
-              leads
+              of <strong>{total.toLocaleString()}</strong> leads
               <i />
-              <span>
-                {selected.length} selected
-              </span>
+              <span>{selected.length} selected</span>
             </div>
 
             <div className="pagination">
@@ -762,32 +661,20 @@ export function LeadsPage() {
                 <select
                   value={pageSize}
                   onChange={(event) => {
-                    setPageSize(
-                      Number(event.target.value),
-                    );
+                    setPageSize(Number(event.target.value));
                     setPage(1);
                   }}
                 >
-                  <option value={8}>
-                    8 per page
-                  </option>
-                  <option value={25}>
-                    25 per page
-                  </option>
-                  <option value={50}>
-                    50 per page
-                  </option>
+                  <option value={8}>8 per page</option>
+                  <option value={25}>25 per page</option>
+                  <option value={50}>50 per page</option>
                 </select>
               </label>
 
               <button
                 type="button"
                 disabled={page <= 1}
-                onClick={() =>
-                  setPage((value) =>
-                    Math.max(1, value - 1),
-                  )
-                }
+                onClick={() => setPage((value) => Math.max(1, value - 1))}
               >
                 Previous
               </button>
@@ -804,12 +691,7 @@ export function LeadsPage() {
                 type="button"
                 disabled={page >= pageCount}
                 onClick={() =>
-                  setPage((value) =>
-                    Math.min(
-                      pageCount,
-                      value + 1,
-                    ),
-                  )
+                  setPage((value) => Math.min(pageCount, value + 1))
                 }
               >
                 Next
@@ -820,10 +702,7 @@ export function LeadsPage() {
       )}
 
       {notice && (
-        <div
-          className="dash-toast"
-          role="status"
-        >
+        <div className="dash-toast" role="status">
           <Check size={16} />
 
           {notice}
@@ -843,40 +722,33 @@ export function LeadsPage() {
           id="lead-details"
           title={openedLead.name}
           description={`Submitted through ${openedLead.form}`}
-          onClose={() => setOpenedLead(null)}
+          onClose={closeLeadDetails}
         >
           <div className="space-y-3 text-sm">
             <p>
-              <strong>Email:</strong>{" "}
-              {openedLead.email || "Not supplied"}
+              <strong>Email:</strong> {openedLead.email || "Not supplied"}
             </p>
 
             <p>
-              <strong>Phone:</strong>{" "}
-              {openedLead.phone}
+              <strong>Phone:</strong> {openedLead.phone}
             </p>
 
             <p>
-              <strong>Company:</strong>{" "}
-              {openedLead.company}
+              <strong>Company:</strong> {openedLead.company}
             </p>
 
             <p>
-              <strong>Status:</strong>{" "}
-              {openedLead.status}
+              <strong>Status:</strong> {openedLead.status}
             </p>
 
             <p>
-              <strong>Notes:</strong>{" "}
-              {openedLead.notes || "No notes"}
+              <strong>Notes:</strong> {openedLead.notes || "No notes"}
             </p>
 
             <button
               type="button"
               className="primary-button"
-              onClick={() =>
-                void addNote(openedLead)
-              }
+              onClick={() => void addNote(openedLead)}
             >
               Edit Notes
             </button>
@@ -898,13 +770,7 @@ function ListIcon() {
 function RowsIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true">
-      <rect
-        x="3"
-        y="3"
-        width="14"
-        height="14"
-        rx="1"
-      />
+      <rect x="3" y="3" width="14" height="14" rx="1" />
       <path d="M7 3v14M7 7h10M7 12h10" />
     </svg>
   );
@@ -913,13 +779,7 @@ function RowsIcon() {
 function ColumnsIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true">
-      <rect
-        x="2.5"
-        y="3"
-        width="15"
-        height="14"
-        rx="1"
-      />
+      <rect x="2.5" y="3" width="15" height="14" rx="1" />
       <path d="M7.5 3v14M12.5 3v14" />
     </svg>
   );
