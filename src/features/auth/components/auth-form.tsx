@@ -4,7 +4,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Layers3, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Layers3, Loader2 } from "lucide-react";
 
 type AuthMode = "login" | "register";
 
@@ -32,6 +32,8 @@ export function AuthForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -178,23 +180,38 @@ export function AuthForm({
               >
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete={
-                  isRegister
-                    ? "new-password"
-                    : "current-password"
-                }
-                required
-                minLength={isRegister ? 12 : 1}
-                value={password}
-                onChange={(event) =>
-                  setPassword(event.target.value)
-                }
-                className="w-full rounded-lg border border-[#d9d6e7] bg-white px-4 py-3 text-sm outline-none focus:border-[#4f46e5]"
-                placeholder="Enter your password"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={
+                    isRegister
+                      ? "new-password"
+                      : "current-password"
+                  }
+                  required
+                  minLength={isRegister ? 12 : 1}
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  className="min-h-12 w-full rounded-lg border border-[#d9d6e7] bg-white px-4 py-3 pr-14 text-sm outline-none focus:border-[#4f46e5]"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  aria-label="Show password"
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="absolute right-1 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-lg text-[#55586c] transition hover:bg-[#f3f2fa] hover:text-[#4f46e5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} aria-hidden="true" />
+                  ) : (
+                    <Eye size={18} aria-hidden="true" />
+                  )}
+                </button>
+              </div>
               {isRegister && (
                 <p className="mt-1 text-xs text-[#55586c]">
                   Use at least 12 characters.
@@ -210,18 +227,37 @@ export function AuthForm({
                 >
                   Confirm password
                 </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={confirmPassword}
-                  onChange={(event) =>
-                    setConfirmPassword(event.target.value)
-                  }
-                  className="w-full rounded-lg border border-[#d9d6e7] bg-white px-4 py-3 text-sm outline-none focus:border-[#4f46e5]"
-                  placeholder="Repeat your password"
-                />
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={
+                      showConfirmPassword ? "text" : "password"
+                    }
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(event) =>
+                      setConfirmPassword(event.target.value)
+                    }
+                    className="min-h-12 w-full rounded-lg border border-[#d9d6e7] bg-white px-4 py-3 pr-14 text-sm outline-none focus:border-[#4f46e5]"
+                    placeholder="Repeat your password"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Show confirmation password"
+                    aria-pressed={showConfirmPassword}
+                    onClick={() =>
+                      setShowConfirmPassword((visible) => !visible)
+                    }
+                    className="absolute right-1 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-lg text-[#55586c] transition hover:bg-[#f3f2fa] hover:text-[#4f46e5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} aria-hidden="true" />
+                    ) : (
+                      <Eye size={18} aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
               </div>
             )}
 
